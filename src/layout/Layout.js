@@ -1,7 +1,7 @@
 import Head from "next/head"
 import Sidebar from "../components/Sidebar"
 import Header from "../components/Header"
-import styles from "../src/styles/Layout.module.css"
+import styles from "../styles/Layout.module.css"
 
 const Layout = ({ children, pagina }) => {
   return (
@@ -14,7 +14,7 @@ const Layout = ({ children, pagina }) => {
           <Sidebar />
         </aside>
 
-        <div className="md:w-9/12 ">
+        <div className="md:w-9/12 bg-bgEdition ">
           <div className="grid grid-flow-row-2">
             <div className= {`${styles.border}`} >
               <Header />
