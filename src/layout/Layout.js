@@ -16,7 +16,7 @@ const Layout = ({ children, pagina }) => {
 
         <div className="md:w-9/12 bg-bgEdition ">
           <div className="grid grid-flow-row-2">
-            <div className= {`${styles.border}`} >
+            <div className={`${styles.border}`} >
               <Header />
             </div>
             <main className="h-screen ">

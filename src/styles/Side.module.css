@@ -31,7 +31,10 @@
 .modulo {
     border-bottom: 2px solid transparent;
     border-bottom-color: rgb(173, 173, 173);
-    ;
 
 
+}
+
+.modulo p {
+    margin-bottom: 6px;
 }
