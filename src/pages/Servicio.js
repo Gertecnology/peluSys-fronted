@@ -41,7 +41,7 @@ const Servicio = ({ }) => {
                     onSubmit={handleSubmit(formSubmit)}
                 >
                     <Modal.Header closeButton>
-                        <Modal.Title>Agregar Producto</Modal.Title>
+                        <Modal.Title>Agregar Servicio</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 
@@ -52,7 +52,7 @@ const Servicio = ({ }) => {
                                     required: true
                                 })}
                                 type="text"
-                                placeholder="Detalle del producto"
+                                placeholder="Detalle del servicio"
                                 isInvalid={errors.detalle}
                             />
                         </Form.Group>
@@ -64,7 +64,7 @@ const Servicio = ({ }) => {
                                     required: true
                                 })}
                                 type="number"
-                                placeholder="Precio del producto"
+                                placeholder="Precio del servicio"
                                 isInvalid={errors.precio}
                             />
                         </Form.Group>
