@@ -1,0 +1,32 @@
+.barra {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+
+}
+
+@media (min-width: 768px) {
+    .barra {
+        flex-direction: row;
+        justify-content: space-between;
+        font-family: 'Poppins', sans-serif;
+        font-weight: bold;
+    }
+
+}
+.ruta{
+    font-weight: normal;
+    color: rgb(112, 110, 110)
+}
+
+.icons {
+    display: flex;
+    align-items: center;
+}
+.icons svg{
+    margin: auto 2px;
+}
+.icons svg:hover {
+    cursor: pointer;
+}

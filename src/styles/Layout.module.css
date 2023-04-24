@@ -1,0 +1,5 @@
+.border{
+    border-bottom: 2px solid transparent;
+    border-bottom-color: gray;
+    margin: auto 2rem;
+}
