@@ -2,7 +2,7 @@ import Layout from "@/layout/Layout";
 import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-const Clientes = ({ }) => {
+const Roles = ({ }) => {
 
     const [showModal, setShowModal] = useState(false);
     const { register, handleSubmit, formState: { errors, isLoading },setValue } = useForm();
@@ -106,4 +106,4 @@ const Clientes = ({ }) => {
 }
 
 
-export default Clientes;
+export default Roles;
