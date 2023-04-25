@@ -1,5 +1,5 @@
 import Layout from "@/layout/Layout";
-import { Modal, Button, Form, Table, Container, Row, Col, Badge } from "react-bootstrap";
+import { Modal, Button, Form, Table, Container, Row, Col, Badge, Toast } from "react-bootstrap";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Typeahead } from 'react-bootstrap-typeahead';
@@ -7,7 +7,7 @@ import 'react-bootstrap-typeahead/css/Typeahead.css';
 const Usuarios = ({ }) => {
 
     const [showModal, setShowModal] = useState(false);
-    const { register, handleSubmit, formState: { errors, isLoading }, setValue, watch } = useForm();
+    const { register, handleSubmit, formState: { errors, isLoading }, setValue, watch, setError } = useForm();
     const [usuarios, setUsuarios] = useState([{ id: 1, username: "alexis", email: "email@email.com", password: "123456", confirmPassword: "123456", empleado: "Empleado 1", roles: [1, 2, 3] }])
 
     const empleados = [
@@ -116,15 +116,23 @@ const Usuarios = ({ }) => {
                                     </Form.Group>
 
                                     <Form.Group>
-                                        <Form.Label>Roles</Form.Label>
+                                        <Form.Label>
+                                            Roles
+                                        </Form.Label>
+
                                         <div>
                                             {roles.map((rol) => (
                                                 <Form.Check
+                                                    onChange={(selected) => {
+                                                        setValue("roles", selected)
+                                                        console.log(watch("roles"))
+                                                    }}
+                                                    isInvalid={errors.roles}
                                                     key={rol.id}
                                                     type="checkbox"
                                                     label={rol.name}
                                                     value={rol.id}
-                                                    {...register("roles")}
+                                                    {...register("roles", { required: true })}
                                                 />
                                             ))}
                                         </div>
