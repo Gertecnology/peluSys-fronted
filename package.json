@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "bootstrap": "^5.2.3",
+    "country-language": "^0.1.7",
     "next": "13.3.0",
     "react": "18.2.0",
     "react-bootstrap": "^2.7.4",
+    "react-bootstrap-typeahead": "^6.1.2",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.43.9",
     "react-loader-spinner": "^5.3.4"
