@@ -8,7 +8,7 @@ const Servicio = ({ }) => {
 
     const [showModal, setShowModal] = useState(false);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue } = useForm();
-    const [servicios, setServicios] = useState([{ id: 1, detalle: "Corte Bakano", precio: 40.000 }])
+    const [servicios, setServicios] = useState([{ id: 1, detalle: "Corte Clasico", precio: 20000 }])
     const [opciones, setOpciones] = useState(
         [
             { id: 1, value: "Detalle" },
@@ -17,7 +17,7 @@ const Servicio = ({ }) => {
     )
 
     const handleModal = () => {
-        const campos = ["id", "Detalle", "Precio"]
+        const campos = ["id", "detalle", "precio"]
         campos.forEach((campo) => setValue(campo, ""))
         setShowModal(!showModal);
         
@@ -115,7 +115,7 @@ const Servicio = ({ }) => {
                             {servicios.map((servicio, index) => (
                                 <tr key={index}>
                                     <td>{servicio.detalle}</td>
-                                    <td>{servicio.precio}</td>
+                                    <td>{servicio.precio} Gs.</td>
 
                                     <td>
                                         <div className="flex gap-2 ">

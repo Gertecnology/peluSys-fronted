@@ -16,8 +16,16 @@ const Producto = ({ }) => {
         ]
     )
 
+    const [iva, setIva] = useState(
+        [
+            { id: 1, value: 5 },
+            { id: 2, value: 10 },
+            { id: 3, value: "Excenta" }
+        ]
+    )
+
     const handleModal = () => {
-        const campos = ["id", "Detalle", "Marca", "Precio", "IVA"]
+        const campos = ["id", "detalle", "marca", "precio", "iva"]
         campos.forEach((campo) => setValue(campo, ""))
         setShowModal(!showModal);
     };
@@ -32,6 +40,9 @@ const Producto = ({ }) => {
 
     }
 
+    const handleEliminar = (id) => {
+        console.log(id);
+    }
 
     return (
         <Layout pagina={"Producto"}>
@@ -83,18 +94,20 @@ const Producto = ({ }) => {
                             />
                         </Form.Group>
 
+
                         <Form.Group>
                             <Form.Label>IVA</Form.Label>
-                            <Form.Control
-                                {...register("IVA", {
+                            <Form.Select
+                                {...register("iva", {
                                     required: true
                                 })}
-                                type="number"
-                                placeholder="Iva"
-                                isInvalid={errors.iva}
-                            />
-                        </Form.Group>
 
+                                isInvalid={errors.iva}>
+                                {iva.map((value, id) => (
+                                    <option key={id} value={value.value}>{value.value}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
 
                     </Modal.Body>
                     <Modal.Footer>
@@ -145,12 +158,12 @@ const Producto = ({ }) => {
                                 <tr key={index}>
                                     <td>{producto.detalle}</td>
                                     <td>{producto.marca}</td>
-                                    <td>{producto.precio}</td>
-                                    <td>%{producto.iva}</td>
+                                    <td>{producto.precio} Gs.</td>
+                                    <td>{producto.iva == "Excenta" ? producto.iva : (`%${producto.iva}`)}</td>
                                     <td>
                                         <div className="flex gap-2 ">
                                             <Button size="sm" variant="primary" onClick={() => handleEditar(producto.id)}>Editar</Button> {" "}
-                                            <Button size="sm" variant="danger">Eliminar</Button>
+                                            <Button size="sm" variant="danger" onClick={() => handleEliminar(producto.id)}>Eliminar</Button>
                                         </div>
                                     </td>
                                 </tr>
