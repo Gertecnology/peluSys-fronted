@@ -3,6 +3,8 @@ import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
+import { FiEdit2 } from "react-icons/fi";
+import { AiOutlineDelete } from "react-icons/ai";
 
 
 const Servicio = ({ }) => {
@@ -140,8 +142,14 @@ const Servicio = ({ }) => {
 
                                     <td>
                                         <div className="flex gap-2 ">
-                                            <Button size="sm" variant="primary" onClick={() => handleEditar(servicio.id)}>Editar</Button> {" "}
-                                            <Button size="sm" variant="danger">Eliminar</Button>
+                                            <Button size="sm" variant="link" onClick={() => handleEditar(servicio.id)}>
+                                                <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                            <Button size="sm" variant="link">
+                                                <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
                                         </div>
                                     </td>
                                 </tr>
