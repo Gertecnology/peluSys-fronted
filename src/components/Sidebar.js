@@ -4,7 +4,7 @@ const Sidebar = () => {
   return (
     <div className={`${styles.contenedor} my-32 space-y-96`}>
       <div className={`${styles.modulo} mx-28`}>
-        <h2>Menú de Modulos</h2>
+        <p>Menú de Modulos</p>
       </div>
 
       <div className={`${styles.modulo} mx-20`}>
