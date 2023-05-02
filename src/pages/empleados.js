@@ -118,6 +118,7 @@ const Empleados = ({ }) => {
                                     <Form.Group>
                                         <Form.Label>Nacionalidad</Form.Label>
                                         <Typeahead
+                                            id="nacionalidad"
                                          {...register("nacionalidad", { required: true })}
                                          onChange={(selected) => {
                                             setValue("nacionalidad",selected)
