@@ -2,7 +2,21 @@ import Head from "next/head"
 import Sidebar from "../components/Sidebar"
 import Header from "../components/Header"
 import styles from "../styles/Layout.module.css"
+import { ToastContainer } from "react-toastify";
 
+
+import "react-toastify/dist/ReactToastify.css";
+
+const customStyles = {
+  content: {
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
+  },
+};
 const Layout = ({ children, pagina }) => {
   return (
     <>
@@ -26,8 +40,10 @@ const Layout = ({ children, pagina }) => {
         </div>
 
       </div>
+      <ToastContainer />
     </>
   )
 }
+
 
 export default Layout

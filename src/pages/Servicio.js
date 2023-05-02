@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import { FiEdit2 } from "react-icons/fi";
 import { AiOutlineDelete } from "react-icons/ai";
+import { toast } from "react-toastify";
 
 
 const Servicio = ({ }) => {
@@ -44,6 +45,10 @@ const Servicio = ({ }) => {
         campos.forEach((campo) => setValue(campo, ""))
         setShowModal(!showModal);
 
+    };
+
+    const handleGuardar = () => {
+        toast.success('Servicio Agregado');
     };
 
     const formSubmit = (data) => {
@@ -97,7 +102,7 @@ const Servicio = ({ }) => {
                         <Button variant="secondary" onClick={handleModal}>
                             Cerrar
                         </Button>
-                        <Button variant="primary" type="submit">Guardar</Button>
+                        <Button variant="primary" type="submit" onClick={handleGuardar}>Guardar</Button>
                     </Modal.Footer>
                 </Form>
             </Modal>
@@ -121,12 +126,12 @@ const Servicio = ({ }) => {
                         Buscar
                     </Button>
 
-                    <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Producto</Button>
+                    <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Servicio</Button>
 
                 </div>
 
-                <div className="px-5">
-                    <Table bordered hover size="sm" className="bg-white mt-10">
+                <div className="px-5 overflow-y-scroll">
+                    <Table bordered hover size="sm" className="bg-white mt-10 overflow-x-scroll">
                         <thead>
                             <tr>
                                 <th>Detalle</th>
