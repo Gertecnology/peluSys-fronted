@@ -1,14 +1,15 @@
 import Layout from "@/layout/Layout";
 import { Modal, Button, Form, Table } from "react-bootstrap";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import axios from "axios";
 
 
 const Servicio = ({ }) => {
 
     const [showModal, setShowModal] = useState(false);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue } = useForm();
-    const [servicios, setServicios] = useState([{ id: 1, detalle: "Corte Bakano", precio: 40.000 }])
+    const [servicios, setServicios] = useState([])
     const [opciones, setOpciones] = useState(
         [
             { id: 1, value: "Detalle" },
@@ -16,11 +17,31 @@ const Servicio = ({ }) => {
         ]
     )
 
+    useEffect(() => {
+        obtenerDatos();
+    }), []
+
+
+    const obtenerDatos = () => {
+        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/";
+        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMDU1NDk2LCJleHAiOjE2ODMxMjAyOTZ9.eYIRcaFvksEkzgroPVOrY2e3LJ4YDQVd-M3egiEF2H4"
+        axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
+            .then(res => {
+                setServicios(res.data);
+            })
+            .catch((error) => {
+                console.log(error)
+            });
+
+
+
+    }
+
     const handleModal = () => {
         const campos = ["id", "Detalle", "Precio"]
         campos.forEach((campo) => setValue(campo, ""))
         setShowModal(!showModal);
-        
+
     };
 
     const formSubmit = (data) => {

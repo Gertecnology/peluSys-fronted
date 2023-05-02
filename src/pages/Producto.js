@@ -32,6 +32,8 @@ const Producto = ({ }) => {
 
     }
 
+    
+
 
     return (
         <Layout pagina={"Producto"}>
