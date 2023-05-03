@@ -75,8 +75,20 @@ const Servicio = ({ }) => {
     }
 
 
-    const handleDelete = (id) =>{
-        
+    const handleDelete = (id) => {
+        const api = `http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/eliminar/${id}`;
+        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMTIzMTYzLCJleHAiOjE2ODMxODc5NjN9.zWXSCd-KwefmQMTh6RMwuImZJHo5GBqTBjWAvUccA3Q"
+
+        axios.delete(api,
+            { headers: { "Authorization": `Bearer ${token}` } })
+            .then(() => {
+                toast.success('Servicio Eliminado');
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error('No se pudo Eliminar!"');
+            });
+
     }
 
     return (
@@ -168,7 +180,7 @@ const Servicio = ({ }) => {
                                                 <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>
-                                            <Button size="sm" variant="link">
+                                            <Button size="sm" variant="link" onClick={() => handleDelete(servicio.id)}>
                                                 <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>
