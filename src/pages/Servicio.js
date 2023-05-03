@@ -11,7 +11,8 @@ import { toast } from "react-toastify";
 const Servicio = ({ }) => {
 
     const [showModal, setShowModal] = useState(false);
-    const { register, handleSubmit, formState: { errors, isLoading }, setValue } = useForm();
+    const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset,
+    } = useForm();
     const [servicios, setServicios] = useState([])
     const [opciones, setOpciones] = useState(
         [
@@ -22,12 +23,12 @@ const Servicio = ({ }) => {
 
     useEffect(() => {
         obtenerDatos();
-    }), []
+    }), [servicios]
 
 
     const obtenerDatos = () => {
         const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/";
-        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMDU1NDk2LCJleHAiOjE2ODMxMjAyOTZ9.eYIRcaFvksEkzgroPVOrY2e3LJ4YDQVd-M3egiEF2H4"
+        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMTIzMTYzLCJleHAiOjE2ODMxODc5NjN9.zWXSCd-KwefmQMTh6RMwuImZJHo5GBqTBjWAvUccA3Q"
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setServicios(res.data);
@@ -41,25 +42,42 @@ const Servicio = ({ }) => {
     }
 
     const handleModal = () => {
-        const campos = ["id", "Detalle", "Precio"]
-        campos.forEach((campo) => setValue(campo, ""))
+        reset();
         setShowModal(!showModal);
 
     };
 
-    const handleGuardar = () => {
-        toast.success('Servicio Agregado');
-    };
-
+    // guardo un nuevo servicio
     const formSubmit = (data) => {
+        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/guardar";
+        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMTIzMTYzLCJleHAiOjE2ODMxODc5NjN9.zWXSCd-KwefmQMTh6RMwuImZJHo5GBqTBjWAvUccA3Q"
+
         handleModal()
-        setServicios([...servicios, data])
+        axios.post(
+            api,
+            data,
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                toast.success('Servicio Agregado');
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error('No se pudo agregar!"');
+            });
+
     }
 
     const handleEditar = (id) => {
-
+        const servicioEditar = servicios.find(s => s.id === id);
+        handleModal();
+        console.log(id)
     }
 
+
+    const handleDelete = (id) =>{
+        
+    }
 
     return (
         <Layout pagina={"Servicio"}>
@@ -74,7 +92,7 @@ const Servicio = ({ }) => {
                     <Modal.Body>
 
                         <Form.Group>
-                            <Form.Label>Detalle</Form.Label>
+                            <Form.Label>Nombre</Form.Label>
                             <Form.Control
                                 {...register("detalle", {
                                     required: true
@@ -102,7 +120,7 @@ const Servicio = ({ }) => {
                         <Button variant="secondary" onClick={handleModal}>
                             Cerrar
                         </Button>
-                        <Button variant="primary" type="submit" onClick={handleGuardar}>Guardar</Button>
+                        <Button variant="primary" type="submit">Guardar</Button>
                     </Modal.Footer>
                 </Form>
             </Modal>
@@ -130,11 +148,11 @@ const Servicio = ({ }) => {
 
                 </div>
 
-                <div className="px-5 overflow-y-scroll">
-                    <Table bordered hover size="sm" className="bg-white mt-10 overflow-x-scroll">
-                        <thead>
+                <div className="px-5 py-3 h-96 overflow-y-scroll">
+                    <Table bordered hover size="sm" className="bg-white mt-10">
+                        <thead className="sticky top-0 bg-white">
                             <tr>
-                                <th>Detalle</th>
+                                <th>Nombre</th>
                                 <th>Precio</th>
                                 <th className="w-1/12">Acciones</th>
                             </tr>
@@ -144,7 +162,6 @@ const Servicio = ({ }) => {
                                 <tr key={index}>
                                     <td>{servicio.detalle}</td>
                                     <td>{servicio.precio}</td>
-
                                     <td>
                                         <div className="flex gap-2 ">
                                             <Button size="sm" variant="link" onClick={() => handleEditar(servicio.id)}>
@@ -163,7 +180,7 @@ const Servicio = ({ }) => {
                     </Table>
                 </div>
             </div>
-        </Layout>
+        </Layout >
     );
 }
 

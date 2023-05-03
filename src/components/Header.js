@@ -28,6 +28,12 @@ const Header = () => {
                     <p className="pr-2 my-0 text-center">User</p>
                 </div>
 
+                <div className="ml-4">
+                    <Button variant="dark">
+                    Cerrar Sesion
+                    </Button>
+                </div>
+
             </div>
         </div>
     )
