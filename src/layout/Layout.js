@@ -2,11 +2,26 @@ import Head from "next/head"
 import Sidebar from "../components/Sidebar"
 import Header from "../components/Header"
 import styles from "../styles/Layout.module.css"
+
+import { ToastContainer } from "react-toastify";
 import { useContext, useEffect, useState } from "react"
 import { AuthContext } from "@/pages/contexts/AuthContext"
 import { useRouter } from "next/router"
 import { Bars } from "react-loader-spinner"
 
+
+import "react-toastify/dist/ReactToastify.css";
+
+const customStyles = {
+  content: {
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
+  },
+};
 const Layout = ({ children, pagina }) => {
 
   const { user } = useContext(AuthContext);
@@ -60,10 +75,9 @@ const Layout = ({ children, pagina }) => {
         </div>
 
       </div>
+      <ToastContainer />
     </>
   )
 }
-
-
 
 export default Layout

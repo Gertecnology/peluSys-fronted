@@ -23,14 +23,5 @@
 .icons {
     display: flex;
     align-items: center;
-}
-.icons svg{
-    margin: auto 2px;
-}
-.icons svg:hover {
-    cursor: pointer;
-}
-
-.icons p{
-    
+    padding: 0 auto;
 }
