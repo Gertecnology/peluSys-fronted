@@ -7,18 +7,21 @@ import { useForm } from "react-hook-form";
 import { getCountries } from "country-language";
 import { AuthContext } from "./contexts/AuthContext";
 import axios from "axios";
+import { toast } from "react-toastify";
 const Empleados = ({ }) => {
     const { user } = useContext(AuthContext);
     const [showModal, setShowModal] = useState(false);
     const [showSiguienteModal, setShowSiguienteModal] = useState(false)
-    const { register, handleSubmit, formState: { errors, isValid }, setValue, watch, getValues, clearErrors, trigger
+    const { register, handleSubmit, formState: { errors, isValid }, setValue, watch, getValues, clearErrors,
     } = useForm();
+    const { register: registerUser, handleSubmit: handleSubmitUser, watch: watchUser ,formState: { errors: errorsUser } } = useForm();
     const [cambiarModalError, setCambiarModalError] = useState(false);
     const [empleados, setEmpleados] = useState([])
     const [isEditar, setIsEditar] = useState(false)
     const [empleadoEditar, setEmpleadoEditar] = useState(undefined)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
+    const [datosForm, setDatosForm] = useState({})
 
     const nacionalidades = getCountries().map(country => country.name);
     const roles = {
@@ -47,7 +50,7 @@ const Empleados = ({ }) => {
 
 
     const obtenerDatos = () => {
-        if (!user) return
+        /*if (!user) return
         const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleados/";
         const token = user.accessToken;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
@@ -57,21 +60,13 @@ const Empleados = ({ }) => {
             .catch((error) => {
                 console.log(error)
             });
-
+*/
     }
 
-    const cambiarModal = async () => {
-        try {
-            await trigger(["nombre","apellido","fechaNacimiento","cedula","direccion","telefono","grupoSanguineo","nacionalidad",
-        "salario","fotoPerfil"]); 
-            console.log(Object.keys(errors))
-            if (Object.keys(errors).length) {
-                setCambiarModalError(true);
-                return
-            }
-          } catch(error){}
-          setShowSiguienteModal(true)
-          setShowModal(false)
+    const cambiarModal = (data) => {
+        setDatosForm({...data})
+        setShowModal(false);
+        setShowSiguienteModal(true);
     }
 
     const handleModal = () => {
@@ -82,19 +77,17 @@ const Empleados = ({ }) => {
     };
 
     const formSubmit = (data) => {
-        console.clear()
-        console.log(data)
-        alert()
-        return
-
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleados/guardar/";
+        
+        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleado/nuevo";
+        console.log(api)
         const token = user.accessToken
-        handleModal()
+        setShowSiguienteModal(false)
         Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
+        console.log({...data,...datosForm, fotoPerfil:"",fechaContratacion:"",fechaAlta:"",aportePatronal:0,aporteObrero:0})
 
         axios.post(
             api,
-            data,
+            {...data,...datosForm, fotoPerfil:"",fechaContratacion:"",fechaAlta:"",aportePatronal:0,aporteObrero:0} ,
             { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
@@ -140,8 +133,6 @@ const Empleados = ({ }) => {
                 setIsEditar(false)
             })
         handleModal()
-
-
     }
 
     const handleSetDelete = (id) => {
@@ -194,12 +185,12 @@ const Empleados = ({ }) => {
                 </Modal.Footer>
             </Modal>
 
-            <Form
-                onSubmit={handleSubmit(() => console.log("hola"))}
-            >
-                <Modal show={showModal} onHide={handleModal} size="lg">
 
+            <Modal show={showModal} onHide={handleModal} size="lg">
 
+                <Form
+                    onSubmit={handleSubmit(isEditar ? handleEditar : cambiarModal)}
+                >
                     <Modal.Header closeButton>
                         <Modal.Title>Agregar Empleado</Modal.Title>
                     </Modal.Header>
@@ -271,12 +262,12 @@ const Empleados = ({ }) => {
                                     <Form.Group>
                                         <Form.Label>Grupo Sanguíneo</Form.Label>
                                         <Form.Select
-                                            {...register("grupoSanguineo", {
+                                            {...register("sanguineo", {
                                                 required: true, validate: {
                                                     seleccionado: v => v !== ""
                                                 }
                                             })}
-                                            isInvalid={errors.grupoSanguineo}
+                                            isInvalid={errors.sanguineo}
                                         >
                                             <option selected key={""} value={""}>Seleccione Una opción</option>
                                             {Object.keys(tiposSangre).map((key) => (
@@ -292,7 +283,7 @@ const Empleados = ({ }) => {
                                             id="nacionalidad"
                                             {...register("nacionalidad", { required: true })}
                                             onChange={(selected) => {
-                                                setValue("nacionalidad", selected)
+                                                setValue("nacionalidad", selected[0])
                                             }}
                                             options={nacionalidades}
                                             placeholder="Selecciona una opción"
@@ -305,7 +296,7 @@ const Empleados = ({ }) => {
                                         <Form.Label>Salario</Form.Label>
                                         <Form.Control
                                             {...register("salario", { required: true })}
-                                            type="text"
+                                            type="number"
                                             placeholder="Salario"
                                             isInvalid={errors.salario}
                                         />
@@ -314,7 +305,7 @@ const Empleados = ({ }) => {
                                     <Form.Group>
                                         <Form.Label>Foto de perfil</Form.Label>
                                         <Form.Control
-                                            {...register("fotoPerfil", { required: true })}
+                                            {...register("fotoPerfil", { required: false })}
                                             type="file"
                                             accept="image/*"
                                             isInvalid={errors.fotoPerfil}
@@ -330,117 +321,120 @@ const Empleados = ({ }) => {
                         <Button variant="secondary" onClick={handleModal}>
                             Cerrar
                         </Button>
-                        <Button onClick={cambiarModal}>
+                        <Button type="submit">
                             Siguiente
                         </Button>
                     </Modal.Footer>
-
-                </Modal>
-
-                <Modal size="lg" show={showSiguienteModal} onHide={() => setShowSiguienteModal(false)}>
-
-                    <Modal.Header closeButton>
-                        <Modal.Title>Crear un usuario para el Empleado </Modal.Title>
-                    </Modal.Header>
-
-                    <Modal.Body>
-                        <Container>
-                            <Row>
-                                <Col>
-                                    <Form.Group>
-                                        <Form.Label>Nombre de usuario</Form.Label>
-                                        <Form.Control
-                                            {...register("username", {
-                                                required: true
-                                            })}
-                                            type="text"
-                                            placeholder="Nombre de usuario"
-                                            isInvalid={errors.username}
-                                        />
-                                    </Form.Group>
-
-                                    <Form.Group>
-                                        <Form.Label>Email</Form.Label>
-                                        <Form.Control
-                                            {...register("email", {
-                                                required: true,
-                                                pattern: /^\S+@\S+$/i //validar que sea un correo electrónico válido
-                                            })}
-                                            type="text"
-                                            placeholder="Email"
-                                            isInvalid={errors.email}
-                                        />
-                                    </Form.Group>
-
-                                    <Form.Group>
-                                        <Form.Label>Contraseña</Form.Label>
-                                        <Form.Control
-                                            {...register("password", {
-                                                required: true,
-                                                minLength: 6 //validar que la contraseña tenga al menos 8 caracteres
-                                            })}
-                                            type="password"
-                                            placeholder="Contraseña"
-                                            isInvalid={errors.password}
-                                        />
-                                    </Form.Group>
-
-                                    <Form.Group>
-                                        <Form.Label>Confirmar contraseña</Form.Label>
-                                        <Form.Control
-                                            {...register("confirmPassword", {
-                                                required: true,
-                                                validate: (value) => value === watch("password") //validar que la confirmación de contraseña sea igual a la contraseña ingresada
-                                            })}
-                                            type="password"
-                                            placeholder="Confirmar contraseña"
-                                            isInvalid={errors.confirmPassword}
-                                        />
-                                    </Form.Group>
-                                </Col>
-                                <Col>
-
-                                    <Form.Group>
-                                        <Form.Label>
-                                            Roles
-                                        </Form.Label>
-
-                                        <div>
-                                            {Object.keys(roles).map((key) => (
-                                                <Form.Check
-                                                    onChange={(selected) => {
-                                                        setValue("roles", selected)
-                                                        console.log(watch("roles"))
-                                                    }}
-                                                    isInvalid={errors.roles}
-                                                    key={key}
-                                                    type="checkbox"
-                                                    label={key}
-                                                    value={roles[key]}
-                                                    {...register("roles", { required: true })}
-                                                />
-                                            ))}
-                                        </div>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                        </Container>
+                </Form>
+            </Modal>
 
 
 
 
-                    </Modal.Body>
+            <Modal size="lg" show={showSiguienteModal} onHide={() => setShowSiguienteModal(false)}>
+            <Form onSubmit={handleSubmitUser(formSubmit)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Crear un usuario para el Empleado </Modal.Title>
+                </Modal.Header>
 
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => { setShowSiguienteModal(false) }} >
-                            Cancelar
-                        </Button>
+                <Modal.Body>
+                    <Container>
+                        <Row>
+                            <Col>
+                                <Form.Group>
+                                    <Form.Label>Nombre de usuario</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("username", {
+                                            required: true
+                                        })}
+                                        type="text"
+                                        placeholder="Nombre de usuario"
+                                        isInvalid={errorsUser.username}
+                                    />
+                                </Form.Group>
 
-                        <Button variant="success" type="submit">Guardar</Button>
-                    </Modal.Footer>
+                                <Form.Group>
+                                    <Form.Label>Email</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("email", {
+                                            required: true,
+                                            pattern: /^\S+@\S+$/i //validar que sea un correo electrónico válido
+                                        })}
+                                        type="text"
+                                        placeholder="Email"
+                                        isInvalid={errors.email}
+                                    />
+                                </Form.Group>
 
-                </Modal>
-            </Form>
+                                <Form.Group>
+                                    <Form.Label>Contraseña</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("password", {
+                                            required: true,
+                                            minLength: 6 //validar que la contraseña tenga al menos 8 caracteres
+                                        })}
+                                        type="password"
+                                        placeholder="Contraseña"
+                                        isInvalid={errorsUser.password}
+                                    />
+                                </Form.Group>
+
+                                <Form.Group>
+                                    <Form.Label>Confirmar contraseña</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("confirmPassword", {
+                                            required: true,
+                                            validate: (value) => value === watchUser("password") //validar que la confirmación de contraseña sea igual a la contraseña ingresada
+                                        })}
+                                        type="password"
+                                        placeholder="Confirmar contraseña"
+                                        isInvalid={errorsUser.confirmPassword}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col>
+
+                                <Form.Group>
+                                    <Form.Label>
+                                        Roles
+                                    </Form.Label>
+
+                                    <div>
+                                        {Object.keys(roles).map((key) => (
+                                            <Form.Check
+                                                onChange={(selected) => {
+                                                    setValue("roles", selected)
+                                                    console.log(watch("roles"))
+                                                }}
+                                                isInvalid={errorsUser.roles}
+                                                key={key}
+                                                type="checkbox"
+                                                label={key}
+                                                value={roles[key]}
+                                                {...registerUser("roles", { required: true })}
+                                            />
+                                        ))}
+                                    </div>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Container>
+
+
+
+
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => { setShowSiguienteModal(false) }} >
+                        Cancelar
+                    </Button>
+
+                    <Button variant="success" type="submit">Guardar</Button>
+                </Modal.Footer>
+                </Form>                                 
+            </Modal>
+
 
 
 

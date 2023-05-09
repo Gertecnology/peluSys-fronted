@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (user) {
       const encryptedToken =  CryptoJS.AES.encrypt(JSON.stringify(user), ENCRYPTION_KEY).toString();
-      Cookies.set('user', encryptedToken, { expires: 7 });
+      Cookies.set('user', encryptedToken, { expires: 0.5 });
     } else {
       Cookies.remove('user');
     }

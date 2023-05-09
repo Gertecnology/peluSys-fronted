@@ -20,6 +20,7 @@ const Cliente = ({ }) => {
     const [clienteEditar, setClienteEditar] = useState(undefined)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
+  
 
     useEffect(() => {
         obtenerDatos();
