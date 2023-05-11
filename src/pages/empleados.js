@@ -8,6 +8,7 @@ import { getCountries } from "country-language";
 import { AuthContext } from "./contexts/AuthContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { getFechaActual } from "@/helpers";
 const Empleados = ({ }) => {
     const { user } = useContext(AuthContext);
     const [showModal, setShowModal] = useState(false);
@@ -50,8 +51,8 @@ const Empleados = ({ }) => {
 
 
     const obtenerDatos = () => {
-        /*if (!user) return
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleados/";
+        if (!user) return
+        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleado";
         const token = user.accessToken;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
@@ -60,7 +61,7 @@ const Empleados = ({ }) => {
             .catch((error) => {
                 console.log(error)
             });
-*/
+
     }
 
     const cambiarModal = (data) => {
@@ -83,11 +84,11 @@ const Empleados = ({ }) => {
         const token = user.accessToken
         setShowSiguienteModal(false)
         Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
-        console.log({...data,...datosForm, fotoPerfil:"",fechaContratacion:"",fechaAlta:"",aportePatronal:0,aporteObrero:0})
+        console.log({...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual(),fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0})
 
         axios.post(
             api,
-            {...data,...datosForm, fotoPerfil:"",fechaContratacion:"",fechaAlta:"",aportePatronal:0,aporteObrero:0} ,
+            {...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual() ,fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0, salario:Number(datosForm["salario"])} ,
             { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
