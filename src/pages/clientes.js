@@ -20,6 +20,7 @@ const Cliente = ({ }) => {
     const [clienteEditar, setClienteEditar] = useState(undefined)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
+  
 
     useEffect(() => {
         obtenerDatos();
@@ -146,7 +147,10 @@ const Cliente = ({ }) => {
                 </Modal.Body>
 
                 <Modal.Footer>
-                    <       Button variant="secondary" onClick={() => setShowModal(false)}>
+                    <       Button variant="secondary" onClick={() => {
+                             setShowDeleteModalModal(false)
+                             setIdEliminar(-1)
+                             }}>
                         Cancelar
                     </Button>
 
