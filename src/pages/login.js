@@ -3,28 +3,14 @@ import { useForm } from "react-hook-form";
 import Image from 'next/image';
 import LoginImg from "../../public/LoginImage.png"
 import { Bars } from 'react-loader-spinner';
-import { fetchUser } from '@/data/authentication';
-import { useContext, useState } from 'react';
-import { AuthContext } from './contexts/AuthContext';
-import { useRouter } from 'next/router';
 
 
 const Login = () => {
     const regexEmail = /^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/;
-    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
-    const {user, setUser} = useContext(AuthContext);
-    const [submitError, setSubmitError] = useState(false);
-    const router = useRouter();
+    const { register, handleSubmit, formState: { errors, isLoading } } = useForm();
 
-    const onSubmit = async (data) => {
-        const respuesta = await fetchUser(data);
-        if(respuesta.status || respuesta.code){
-            setSubmitError(true);
-            return
-        }
-        await setUser(respuesta);
-        router.push("/")
-        return
+    const onSubmit = () => {
+
     }
 
     return (
@@ -60,16 +46,18 @@ const Login = () => {
 
                     
                     <h2 className="text-2xl font-bold mb-8">Iniciar sesión</h2>
-                    <p className={`${!submitError ? "invisible" : ""} text-red-700`}>Usuario o contraseña incorrectos.</p> 
                     <Form onSubmit={handleSubmit(onSubmit)}>
 
                         <Form.Group className="mb-3">
                             <Form.Label>
-                                Username
+                                Email
                             </Form.Label>
                             <Form.Control
-                                {...register("username", {
-                                    required: true
+                                {...register("email", {
+                                    required: true, pattern: {
+                                        message: "format",
+                                        value: regexEmail
+                                    }
                                 })}
 
                                 isInvalid={errors.email}
@@ -97,7 +85,7 @@ const Login = () => {
                                 className=" w-full justify-center text-center align-middle bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                                 type="submit"
                             >
-                                {isSubmitting ? <Bars
+                                {!isLoading ? <Bars
                                     height="25"
                                     width="25"
                                     color="#FFF"

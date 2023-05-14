@@ -11,24 +11,40 @@ import { toast } from "react-toastify";
 const Servicio = ({ }) => {
 
     const [showModal, setShowModal] = useState(false);
-    const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset,
+    const [isEditar, setIsEditar] = useState(false);
+    const [isBuscar, setIsBuscar] = useState(false);
+    const [cargando, setCargando] = useState(false);
+    const [servicioEditar, setServicioEditar] = useState(undefined);
+    const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
     } = useForm();
-    const [servicios, setServicios] = useState([])
+    const [servicios, setServicios] = useState([]);
+    const [serviciosFiltrados, setServiciosFiltrados] = useState([]);
+    const [valor, setValor] = useState("");
     const [opciones, setOpciones] = useState(
         [
-            { id: 1, value: "Detalle" },
+            { id: 1, value: "Nombre" },
             { id: 2, value: "Marca" }
         ]
     )
 
     useEffect(() => {
         obtenerDatos();
-    }), [servicios]
+    }, [])
 
+
+    useEffect(() => {
+        actualizar();
+    }, [valor])
+
+
+
+    const actualizar = () => {
+        valor === "" ? setIsBuscar(false) : null;
+    }
 
     const obtenerDatos = () => {
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/";
-        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMTIzMTYzLCJleHAiOjE2ODMxODc5NjN9.zWXSCd-KwefmQMTh6RMwuImZJHo5GBqTBjWAvUccA3Q"
+        const api = `${process.env.API_URL}/servicios/`;
+        const token = process.env.TOKEN;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setServicios(res.data);
@@ -42,17 +58,20 @@ const Servicio = ({ }) => {
     }
 
     const handleModal = () => {
-        reset();
         setShowModal(!showModal);
+        reset();
+        setIsEditar(false);
+
 
     };
 
     // guardo un nuevo servicio
     const formSubmit = (data) => {
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/guardar";
-        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMTIzMTYzLCJleHAiOjE2ODMxODc5NjN9.zWXSCd-KwefmQMTh6RMwuImZJHo5GBqTBjWAvUccA3Q"
-
+        const token = process.env.TOKEN;
+        console.log(data.id);
         handleModal()
+        const api = `${process.env.API_URL}/servicios/guardar`;
+
         axios.post(
             api,
             data,
@@ -62,33 +81,81 @@ const Servicio = ({ }) => {
                 toast.success('Servicio Agregado');
             })
             .catch((error) => {
-                console.log(error)
                 toast.error('No se pudo agregar!"');
             });
 
     }
 
-    const handleEditar = (id) => {
-        const servicioEditar = servicios.find(s => s.id === id);
+    const handleSetEditar = (id) => {
+        const servicio = servicios.find(s => s.id === id);
+        console.log(servicio)
+        setServicioEditar(servicio);
         handleModal();
-        console.log(id)
+        setValue("detalle", servicio.detalle);
+        setValue("precio", servicio.precio);
+        setIsEditar(true);
+        Object.keys(getValues()).forEach(key => setValue(key, servicio[key]));
+
+    }
+
+
+    const handleEditar = (data) => {
+        handleModal();
+        const token = process.env.TOKEN;
+        const api = `${process.env.API_URL}/servicios/actulizar/${servicioEditar.id}`;
+        axios.post(api, {
+            id: servicioEditar.id,
+            ...data
+        },
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then(() => {
+                toast.success('Servicio Actualizado');
+                obtenerDatos();
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error('No se pudo actualizar!"');
+            })
+            .finally(() => {
+                setServicioEditar(undefined);
+                setIsEditar(false);
+
+            })
+        handleModal();
+
     }
 
 
     const handleDelete = (id) => {
-        const api = `http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/servicios/eliminar/${id}`;
-        const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiXSwiaWF0IjoxNjgzMTIzMTYzLCJleHAiOjE2ODMxODc5NjN9.zWXSCd-KwefmQMTh6RMwuImZJHo5GBqTBjWAvUccA3Q"
-
+        const api = `${process.env.API_URL}/servicios/eliminar/${id}`;
+        const token = process.env.TOKEN;
         axios.delete(api,
             { headers: { "Authorization": `Bearer ${token}` } })
             .then(() => {
-                toast.success('Servicio Eliminado');
+                toast.info('Servicio Eliminado');
+                obtenerDatos();
             })
-            .catch((error) => {
-                console.log(error)
-                toast.error('No se pudo Eliminar!"');
+            .catch(() => {
+                toast.error('No se pudo Eliminar!');
             });
 
+    }
+
+    const handleFiltrar = (n) => {
+        setCargando(true);
+        setIsBuscar(true);
+        const api = `${process.env.API_URL}/servicios/buscarNombre?nombre=${n}`;
+        const token = process.env.TOKEN;
+        axios.get(api,
+            { headers: { "Authorization": `Bearer ${token}` } })
+            .then((res) => {
+                setServiciosFiltrados(res.data);
+                console.log(res.data.id)
+            });
+        setTimeout(() => {
+            setCargando(false);
+        }, 300);
     }
 
     return (
@@ -96,7 +163,7 @@ const Servicio = ({ }) => {
 
             <Modal show={showModal} onHide={handleModal}>
                 <Form
-                    onSubmit={handleSubmit(formSubmit)}
+                    onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header closeButton>
                         <Modal.Title>Agregar Servicio</Modal.Title>
@@ -132,27 +199,24 @@ const Servicio = ({ }) => {
                         <Button variant="secondary" onClick={handleModal}>
                             Cerrar
                         </Button>
-                        <Button variant="primary" type="submit">Guardar</Button>
+                        <Button variant="primary" type="submit">
+                            {isEditar ? "Terminar Edición" : "Guardar"}
+                        </Button>
                     </Modal.Footer>
                 </Form>
             </Modal>
 
 
-
             <div className="block">
                 <div className="px-5 flex justify-between gap-3">
-                    <Form.Select aria-label="w-1/2">
-                        <option value={-1}>-- Filtrar por --</option>
-                        {opciones.map((value, id) => (
-                            <option key={id} value={value.value}>{value.value}</option>
-                        ))}
-                    </Form.Select>
                     <Form.Control
                         className="w-1/6"
                         placeholder="Has tu busqueda"
+                        value={valor}
+                        onChange={e => setValor(e.target.value)}
                     />
 
-                    <Button variant="secondary">
+                    <Button variant="secondary" onClick={() => handleFiltrar(valor)}>
                         Buscar
                     </Button>
 
@@ -160,37 +224,73 @@ const Servicio = ({ }) => {
 
                 </div>
 
-                <div className="px-5 py-3 h-96 overflow-y-scroll">
-                    <Table bordered hover size="sm" className="bg-white mt-10">
-                        <thead className="sticky top-0 bg-white">
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Precio</th>
-                                <th className="w-1/12">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {servicios.map((servicio, index) => (
-                                <tr key={index}>
-                                    <td>{servicio.detalle}</td>
-                                    <td>{servicio.precio}</td>
-                                    <td>
-                                        <div className="flex gap-2 ">
-                                            <Button size="sm" variant="link" onClick={() => handleEditar(servicio.id)}>
-                                                <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
-                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                            </Button>
-                                            <Button size="sm" variant="link" onClick={() => handleDelete(servicio.id)}>
-                                                <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
-                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                            </Button>
-                                        </div>
-                                    </td>
+                {cargando ? (<div class="sk-circle">
+                    <div class="sk-circle1 sk-child"></div>
+                    <div class="sk-circle2 sk-child"></div>
+                    <div class="sk-circle3 sk-child"></div>
+                    <div class="sk-circle4 sk-child"></div>
+                    <div class="sk-circle5 sk-child"></div>
+                    <div class="sk-circle6 sk-child"></div>
+                    <div class="sk-circle7 sk-child"></div>
+                    <div class="sk-circle8 sk-child"></div>
+                    <div class="sk-circle9 sk-child"></div>
+                    <div class="sk-circle10 sk-child"></div>
+                    <div class="sk-circle11 sk-child"></div>
+                    <div class="sk-circle12 sk-child"></div>
+                </div>) : (
+                    <div className="px-5 py-3 h-96 overflow-y-scroll">
+                        <Table bordered hover size="sm" className="bg-white mt-10">
+                            <thead className="sticky top-0 bg-white">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Precio</th>
+                                    <th className="w-1/12">Acciones</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {isBuscar ? (
+                                    serviciosFiltrados.map((servicio, index) => (
+                                        <tr key={index}>
+                                            <td>{servicio.detalle}</td>
+                                            <td>{servicio.precio}</td>
+                                            <td>
+                                                <div className="flex gap-2 ">
+                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(servicio.id)}>
+                                                        <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                    </Button>
+                                                    <Button size="sm" variant="link" onClick={() => handleDelete(servicio.id)}>
+                                                        <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+
+
+                                ) : (servicios.map((servicio, index) => (
+                                    <tr key={index}>
+                                        <td>{servicio.detalle}</td>
+                                        <td>{servicio.precio}</td>
+                                        <td>
+                                            <div className="flex gap-2 ">
+                                                <Button size="sm" variant="link" onClick={() => handleSetEditar(servicio.id)}>
+                                                    <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                </Button>
+                                                <Button size="sm" variant="link" onClick={() => handleDelete(servicio.id)}>
+                                                    <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )))}
+
+                            </tbody>
+                        </Table>
+                    </div>)}
             </div>
         </Layout >
     );
