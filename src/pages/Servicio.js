@@ -114,8 +114,7 @@ const Servicio = ({ }) => {
                 obtenerDatos();
             })
             .catch((error) => {
-                console.log(error)
-                toast.error('No se pudo actualizar!"');
+                toast.error('No se pudo actualizar!!!"');
             })
             .finally(() => {
                 setServicioEditar(undefined);
