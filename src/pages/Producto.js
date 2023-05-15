@@ -15,11 +15,13 @@ const Producto = ({ }) => {
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
+    const [show, setShow] = useState(false);
     const [productoEditar, setProductoEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
     } = useForm();
     const [productos, setProductos] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
+    const [productoSeleccionado, setProductoSeleccionado] = useState([]);
     const [opciones, setOpciones] = useState(
         [
             { id: 1, value: "Detalle" },
@@ -43,7 +45,6 @@ const Producto = ({ }) => {
         obtenerDatos();
         obtenerMarcas();
         obtenerProveedores();
-        console.log(ruta)
     }, [])
 
     useEffect(() => {
@@ -63,7 +64,7 @@ const Producto = ({ }) => {
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setProductos(res.data);
-                console.log(res.data)
+                console.log(productos);
 
             })
             .catch((error) => {
@@ -91,9 +92,13 @@ const Producto = ({ }) => {
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setProveedores(res.data);
+
             })
             .catch((error) => {
                 console.log(error)
+            })
+            .finally(() => {
+                console.log(proveedores)
             })
 
     }
@@ -110,15 +115,25 @@ const Producto = ({ }) => {
     const formSubmit = (data) => {
         const token = process.env.TOKEN;
         handleModal()
+        console.log(data)
         const api = `${process.env.API_URL}/producto/guardar`;
 
         axios.post(
             api,
-            data,
+            {
+                nombre: data.nombre,
+                id_marca: data.marca,
+                detalle: data.detalle,
+                precio: data.precio,
+                id_proveedor: data.proveedor,
+                tipo_iva: data.iva,
+
+            },
             { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
                 toast.success('Producto Agregado');
+                obtenerDatos();
             })
             .catch((error) => {
                 toast.error('No se pudo agregar el producto!"');
@@ -205,6 +220,14 @@ const Producto = ({ }) => {
 
     }
 
+    const handleClose = () => setShow(false);
+    const handleRowClick = (id) => {
+        const item = productos.find(p => p.id === id);
+        setProductoSeleccionado(item);
+        setShow(true);
+        console.log(productoSeleccionado);
+    }
+
 
     const converter = (value) => {
         if (value === 0.1) {
@@ -216,10 +239,14 @@ const Producto = ({ }) => {
     }
 
     const converterMarca = (id) => {
-        const marca = marcas.find(s => s.id_marca === id);
-        return marca.nombre;
+        const marca = marcas.find(m => m.id_marca === id);
+        return marca?.nombre
     }
 
+    const converterProveedor = (id) => {
+        const proveedor = proveedores.find(p => p.id === id);
+        return proveedor?.nombre
+    }
 
     return (
         <Layout pagina={"Producto"} titulo={"CRUD Producto"} ruta={ruta.pathname}>
@@ -250,7 +277,7 @@ const Producto = ({ }) => {
 
                             <Form.Select {...register("marca", { required: true })}
                             >
-                                <option value="" disabled selected hidden>Seleccione una Marca</option>
+                                <option defaultValue="" disabled selected hidden>Seleccione una Marca</option>
 
                                 {marcas?.map((marca) => (
                                     <option key={marca.id} value={marca.id}>{marca.nombre}</option>
@@ -301,7 +328,7 @@ const Producto = ({ }) => {
                             <Form.Label>IVA</Form.Label>
                             <Form.Select {...register("iva", { required: true })}
                             >
-                                <option value="" disabled selected hidden>IVA</option>
+                                <option defaultValue="" disabled selected hidden>IVA</option>
 
                                 {iva?.map((iva) => (
                                     <option key={iva.id} value={iva.id}>{converter(iva.value)}</option>
@@ -371,7 +398,7 @@ const Producto = ({ }) => {
                             <tbody>
                                 {isBuscar ? (
                                     productosFiltrados.map((producto, index) => (
-                                        <tr key={index}>
+                                        <tr key={index} onClick={() => handleRowClick(producto.id)}>
                                             <td>{producto.nombre}</td>
                                             <td>{producto.marca}</td>
                                             <td>{producto.precio}</td>
@@ -393,7 +420,7 @@ const Producto = ({ }) => {
 
 
                                 ) : (productos.map((producto, index) => (
-                                    <tr key={index}>
+                                    <tr key={index} onClick={() => handleRowClick(producto.id)}>
                                         <td>{producto.nombre}</td>
                                         <td>{converterMarca(producto.marca)}</td>
                                         <td>{producto.precio}</td>
@@ -418,7 +445,19 @@ const Producto = ({ }) => {
                     </div>
                 )}
             </div>
-        </Layout>
+
+            <Modal show={show} onHide={handleClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{productoSeleccionado.nombre}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p className="text-xl">Detalle: <span className="text-2xl">{productoSeleccionado.detalle}</span></p>
+                    <p className="text-xl">Proveedor: <span className="text-2xl">{converterProveedor(productoSeleccionado.id_proveedor)}</span></p>
+
+                </Modal.Body>
+
+            </Modal>
+        </Layout >
     );
 }
 
