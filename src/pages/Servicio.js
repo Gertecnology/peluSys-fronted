@@ -6,9 +6,12 @@ import axios from "axios";
 import { FiEdit2 } from "react-icons/fi";
 import { AiOutlineDelete } from "react-icons/ai";
 import { toast } from "react-toastify";
+import { useRouter } from 'next/router'
+
 
 
 const Servicio = ({ }) => {
+    const ruta = useRouter();
 
     const [showModal, setShowModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
@@ -158,7 +161,7 @@ const Servicio = ({ }) => {
     }
 
     return (
-        <Layout pagina={"Servicio"}>
+        <Layout pagina={"Servicio"} titulo={"CRUD Servicio"} ruta={ruta.pathname}>
 
             <Modal show={showModal} onHide={handleModal}>
                 <Form

@@ -17,7 +17,7 @@ const customStyles = {
     transform: 'translate(-50%, -50%)',
   },
 };
-const Layout = ({ children, pagina }) => {
+const Layout = ({ children, pagina, titulo, ruta }) => {
   return (
     <>
       <Head>
@@ -31,7 +31,7 @@ const Layout = ({ children, pagina }) => {
         <div className="md:w-9/12 bg-bgEdition ">
           <div className="grid grid-flow-row-2">
             <div className={`${styles.border}`} >
-              <Header />
+              <Header titulo={titulo} ruta={ruta} />
             </div>
             <main className="h-screen ">
               {children}

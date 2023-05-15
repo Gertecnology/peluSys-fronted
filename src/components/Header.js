@@ -3,25 +3,27 @@ import { Button } from "react-bootstrap"
 import { IoMdNotificationsOutline } from "react-icons/io"
 import { AiOutlineUser } from "react-icons/ai"
 
-const Header = () => {
+const Header = ({ titulo, ruta }) => {
+
+
     return (
         <div className={`${styles.barra} px-6`} >
 
             <div className="">
 
-                <div className={`${styles.ruta}`} >Dashboard / Balance</div>
-                <div className="text-3xl mt-1">Balance</div>
+                <div className={`${styles.ruta}`} >{ruta}</div>
+                <div className="text-3xl mt-1">{titulo}</div>
 
             </div>
 
             <div className={`${styles.icons}`} >
 
                 <Button variant="link">
-                    <IoMdNotificationsOutline color="#808080" size="25px"/>
+                    <IoMdNotificationsOutline color="#808080" size="25px" />
                 </Button>
                 <Button variant="link">
 
-                    <AiOutlineUser color="#808080" size="25px"/>
+                    <AiOutlineUser color="#808080" size="25px" />
                 </Button>
 
                 <div>
@@ -30,7 +32,7 @@ const Header = () => {
 
                 <div className="ml-4">
                     <Button variant="dark">
-                    Cerrar Sesion
+                        Cerrar Sesion
                     </Button>
                 </div>
 

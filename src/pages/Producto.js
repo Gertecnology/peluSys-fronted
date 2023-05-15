@@ -1,21 +1,25 @@
 import Layout from "@/layout/Layout";
 import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import Select from 'react-select';
+import { useForm } from "react-hook-form";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { FiEdit2 } from "react-icons/fi";
 import { AiOutlineDelete } from "react-icons/ai";
+import { useRouter } from 'next/router'
 
 const Producto = ({ }) => {
+    const ruta = useRouter();
 
     const [showModal, setShowModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
+    const [isBuscar, setIsBuscar] = useState(false);
+    const [cargando, setCargando] = useState(false);
     const [productoEditar, setProductoEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
     } = useForm();
-    const [productos, setProductos] = useState([])
+    const [productos, setProductos] = useState([]);
+    const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [opciones, setOpciones] = useState(
         [
             { id: 1, value: "Detalle" },
@@ -32,14 +36,25 @@ const Producto = ({ }) => {
 
     const [marcas, setMarcas] = useState([]);
     const [proveedores, setProveedores] = useState([]);
+    const [valor, setValor] = useState("");
 
 
     useEffect(() => {
         obtenerDatos();
         obtenerMarcas();
         obtenerProveedores();
+        console.log(ruta)
     }, [])
 
+    useEffect(() => {
+        actualizar();
+    }, [valor])
+
+
+
+    const actualizar = () => {
+        valor === "" ? setIsBuscar(false) : null;
+    }
 
 
     const obtenerDatos = () => {
@@ -48,6 +63,7 @@ const Producto = ({ }) => {
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setProductos(res.data);
+                console.log(res.data)
 
             })
             .catch((error) => {
@@ -61,7 +77,6 @@ const Producto = ({ }) => {
         const token = process.env.TOKEN;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
-                console.log(res.data)
                 setMarcas(res.data);
             })
             .catch((error) => {
@@ -93,7 +108,6 @@ const Producto = ({ }) => {
 
     // guardo un nuevo producto
     const formSubmit = (data) => {
-        console.log(data)
         const token = process.env.TOKEN;
         handleModal()
         const api = `${process.env.API_URL}/producto/guardar`;
@@ -175,6 +189,23 @@ const Producto = ({ }) => {
 
     }
 
+    const handleFiltrar = (n) => {
+        setCargando(true);
+        setIsBuscar(true);
+        const api = `${process.env.API_URL}/producto/buscar?nombre=${n}&marca=""`;
+        const token = process.env.TOKEN;
+        axios.get(api,
+            { headers: { "Authorization": `Bearer ${token}` } })
+            .then((res) => {
+                setProductosFiltrados(res.data);
+            });
+        setTimeout(() => {
+            setCargando(false);
+        }, 300);
+
+    }
+
+
     const converter = (value) => {
         if (value === 0.1) {
             return 10;
@@ -184,9 +215,14 @@ const Producto = ({ }) => {
         }
     }
 
+    const converterMarca = (id) => {
+        const marca = marcas.find(s => s.id_marca === id);
+        return marca.nombre;
+    }
+
 
     return (
-        <Layout pagina={"Producto"}>
+        <Layout pagina={"Producto"} titulo={"CRUD Producto"} ruta={ruta.pathname}>
 
             <Modal show={showModal} onHide={handleModal}>
                 <Form
@@ -290,18 +326,15 @@ const Producto = ({ }) => {
 
             <div className="block">
                 <div className="px-5 flex justify-between gap-3">
-                    <Form.Select aria-label="w-1/2">
-                        <option value={-1}>-- Filtrar por --</option>
-                        {opciones.map((value, id) => (
-                            <option key={id} value={value.value}>{value.value}</option>
-                        ))}
-                    </Form.Select>
+
                     <Form.Control
                         className="w-1/6"
                         placeholder="Has tu busqueda"
+                        value={valor}
+                        onChange={e => setValor(e.target.value)}
                     />
 
-                    <Button variant="secondary">
+                    <Button variant="secondary" onClick={() => handleFiltrar(valor)}>
                         Buscar
                     </Button>
 
@@ -309,41 +342,81 @@ const Producto = ({ }) => {
 
                 </div>
 
-                <div className="px-5">
-                    <Table bordered hover size="sm" className="bg-white mt-10">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Marca</th>
-                                <th>Precio</th>
-                                <th>IVA</th>
-                                <th className="w-1/12">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {productos.map((producto, index) => (
-                                <tr key={index}>
-                                    <td>{producto.nombre}</td>
-                                    <td>{producto.marca}</td>
-                                    <td>{producto.precio}</td>
-                                    <td>%{converter(producto.tipo_iva)}</td>
-                                    <td>
-                                        <div className="flex gap-2 ">
-                                            <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
-                                                <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
-                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                            </Button>
-                                            <Button size="sm" variant="link" onClick={() => handleDelete(producto.id)}>
-                                                <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
-                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                            </Button>
-                                        </div>
-                                    </td>
+
+                {cargando ? (<div class="sk-circle">
+                    <div class="sk-circle1 sk-child"></div>
+                    <div class="sk-circle2 sk-child"></div>
+                    <div class="sk-circle3 sk-child"></div>
+                    <div class="sk-circle4 sk-child"></div>
+                    <div class="sk-circle5 sk-child"></div>
+                    <div class="sk-circle6 sk-child"></div>
+                    <div class="sk-circle7 sk-child"></div>
+                    <div class="sk-circle8 sk-child"></div>
+                    <div class="sk-circle9 sk-child"></div>
+                    <div class="sk-circle10 sk-child"></div>
+                    <div class="sk-circle11 sk-child"></div>
+                    <div class="sk-circle12 sk-child"></div>
+                </div>) : (
+                    <div className="px-5">
+                        <Table bordered hover size="sm" className="bg-white mt-10">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Marca</th>
+                                    <th>Precio</th>
+                                    <th>IVA</th>
+                                    <th className="w-1/12">Acciones</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {isBuscar ? (
+                                    productosFiltrados.map((producto, index) => (
+                                        <tr key={index}>
+                                            <td>{producto.nombre}</td>
+                                            <td>{producto.marca}</td>
+                                            <td>{producto.precio}</td>
+                                            <td>{converter(producto.tipo_iva)}</td>
+                                            <td>
+                                                <div className="flex gap-2 ">
+                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
+                                                        <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                    </Button>
+                                                    <Button size="sm" variant="link" onClick={() => handleDelete(producto.id)}>
+                                                        <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+
+
+                                ) : (productos.map((producto, index) => (
+                                    <tr key={index}>
+                                        <td>{producto.nombre}</td>
+                                        <td>{converterMarca(producto.marca)}</td>
+                                        <td>{producto.precio}</td>
+                                        <td>{converter(producto.tipo_iva)}</td>
+                                        <td>
+                                            <div className="flex gap-2 ">
+                                                <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
+                                                    <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                </Button>
+                                                <Button size="sm" variant="link" onClick={() => handleDelete(producto.id)}>
+                                                    <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )))}
+
+                            </tbody>
+                        </Table>
+                    </div>
+                )}
             </div>
         </Layout>
     );
