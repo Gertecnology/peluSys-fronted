@@ -85,7 +85,11 @@ const Servicio = ({ }) => {
             })
             .catch((error) => {
                 toast.error('No se pudo agregar!"');
-            });
+            })
+            .finally(() => {
+                obtenerDatos();
+
+            })
 
     }
 

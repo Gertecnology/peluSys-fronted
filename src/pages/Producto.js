@@ -31,6 +31,15 @@ const Producto = ({ }) => {
         ]
     )
 
+
+    const [opciones, setOpciones] = useState(
+        [
+            { id: 1, value: "Nombre" },
+            { id: 2, value: "Marca" }
+        ]
+    )
+
+    const [opcionSeleccionada, setOpcionSeleccionada] = useState("")
     const [marcas, setMarcas] = useState([]);
     const [proveedores, setProveedores] = useState([]);
     const [valor, setValor] = useState("");
@@ -59,8 +68,6 @@ const Producto = ({ }) => {
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setProductos(res.data);
-                console.log(productos);
-
             })
             .catch((error) => {
                 console.log(error)
@@ -133,7 +140,10 @@ const Producto = ({ }) => {
             .catch((error) => {
                 toast.error('No se pudo agregar el producto!"');
                 console.log(error);
-            });
+            })
+            .finally(() => {
+                obtenerDatos();
+            })
 
     }
 
@@ -202,13 +212,29 @@ const Producto = ({ }) => {
     const handleFiltrar = (n) => {
         setCargando(true);
         setIsBuscar(true);
-        const api = `${process.env.API_URL}/producto/buscar?nombre=${n}&marca=""`;
-        const token = process.env.TOKEN;
-        axios.get(api,
-            { headers: { "Authorization": `Bearer ${token}` } })
-            .then((res) => {
-                setProductosFiltrados(res.data);
-            });
+        console.log(opcionSeleccionada)
+
+        if (parseInt(opcionSeleccionada) === 1) {
+            const api = `${process.env.API_URL}/producto/buscar?nombre=${n}&marca=""`;
+            const token = process.env.TOKEN;
+            axios.get(api,
+                { headers: { "Authorization": `Bearer ${token}` } })
+                .then((res) => {
+                    setProductosFiltrados(res.data);
+                });
+
+        }
+        else {
+            const api = `${process.env.API_URL}/producto/buscar?nombre=""&marca=${n}`;
+            const token = process.env.TOKEN;
+            axios.get(api,
+                { headers: { "Authorization": `Bearer ${token}` } })
+                .then((res) => {
+                    setProductosFiltrados(res.data);
+                });
+
+
+        }
         setTimeout(() => {
             setCargando(false);
         }, 300);
@@ -294,7 +320,7 @@ const Producto = ({ }) => {
 
                                 type="text"
                                 placeholder="Descripción del producto"
-                                isInvalid={errors.marca}
+                                isInvalid={errors.detalle}
                             />
                         </Form.Group>
 
@@ -350,6 +376,15 @@ const Producto = ({ }) => {
 
             <div className="block">
                 <div className="px-5 flex justify-between gap-3">
+                    <Form.Select
+                        value={opcionSeleccionada}
+                        onChange={(e) => setOpcionSeleccionada(e.target.value)}
+                    >
+
+                        {opciones?.map((opcion) => (
+                            <option key={opcion.id} value={opcion.id}>{opcion.value}</option>
+                        ))}
+                    </Form.Select>
 
                     <Form.Control
                         className="w-1/6"
@@ -397,7 +432,7 @@ const Producto = ({ }) => {
                                     productosFiltrados.map((producto, index) => (
                                         <tr key={index} onClick={() => handleRowClick(producto.id)}>
                                             <td>{producto.nombre}</td>
-                                            <td>{producto.marca}</td>
+                                            <td>{converterMarca(producto.id_marca)}</td>
                                             <td>{producto.precio}</td>
                                             <td>{converter(producto.tipo_iva)}</td>
                                             <td>
@@ -445,11 +480,13 @@ const Producto = ({ }) => {
 
             <Modal show={isEditar ? "" : show} onHide={handleClose}>
                 <Modal.Header closeButton>
-                    <Modal.Title>{productoSeleccionado.nombre}</Modal.Title>
+                    <Modal.Title>
+                        <h1 className="text-3xl font-bold">{productoSeleccionado.nombre}</h1>
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p className="text-xl">Detalle: <span className="text-2xl">{productoSeleccionado.detalle}</span></p>
-                    <p className="text-xl">Proveedor: <span className="text-2xl">{converterProveedor(productoSeleccionado.id_proveedor)}</span></p>
+                    <p className="text-xl font-light">Detalle: <span className="text-2xl font-normal">{productoSeleccionado.detalle}</span></p>
+                    <p className="text-xl font-light">Proveedor: <span className="text-2xl font-normal">{converterProveedor(productoSeleccionado.id_proveedor)}</span></p>
 
                 </Modal.Body>
 
