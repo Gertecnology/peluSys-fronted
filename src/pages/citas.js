@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react';
 import BigCalendar from '../shared/BigCalendar';
 import Layout from '@/layout/Layout';
 import moment from 'moment';
-import { Badge, Button, Table, Accordion } from 'react-bootstrap';
+import { Badge, Button, Table, Accordion, Form, Modal, Container, Row, Col } from 'react-bootstrap';
+import { Typeahead } from 'react-bootstrap-typeahead';
 import { FaCalendar } from 'react-icons/fa';
 import { FiEdit2 } from 'react-icons/fi';
 import { AiOutlineDelete } from 'react-icons/ai';
+import { useForm } from 'react-hook-form';
+import Select from "react-select"
+
 
 const Citas = () => {
   const [eventos, setEventos] = useState([])
@@ -20,10 +24,33 @@ const Citas = () => {
     { fecha: '2023-05-05', hora: '15:30', detalle: 'El cliente solicita un corte de pelo clásico', cliente: 'Cliente 8', peluquero: 'Peluquero 8', estado: 'Espera' },
     { fecha: '2023-05-05', hora: '17:45', detalle: 'El cliente quiere un peinado para una fiesta', cliente: 'Cliente 9', peluquero: 'Peluquero 9', estado: 'Espera' },
     { fecha: '2023-05-11', hora: '11:30', detalle: 'El cliente quiere un corte de pelo moderno', cliente: 'Cliente 10', peluquero: 'Peluquero 10', estado: 'Espera' },
-    { fecha: '2023-05-11', hora: '16:45', detalle: 'El cliente quiere un peinado recogido y El cliente quiere un cambio de look radical y El cliente quiere un peinado para una fiesta', cliente: 'Cliente 11', peluquero: 'Peluquero 11', estado: 'Espera' }
   ])
   const [fechaSeleccionada, setFechaSeleccionada] = useState(moment())
   const [filaSeleccionada, setFilaSeleccionada] = useState(-1)
+  const { register, handleSubmit, formState: { errors, isValid }, setValue, watch, getValues, clearErrors, } = useForm()
+  const [showModal, setShowModal] = useState(false)
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([])
+
+  const clientes = [
+    "Pedro Perez", "Juan García", "María Sosa", "Mario Ojeda"
+  ]
+
+  const peluqueros = [
+    "María López", "Pedro Rodríguez", "Ana Martínez", "Luis Fernández"
+  ]
+  const servicios = [
+    { value: 'cortePelo', label: 'Corte de pelo' },
+    { value: 'peinadoEventos', label: 'Peinado para eventos' },
+    { value: 'coloracion', label: 'Coloración' },
+    { value: 'mechas', label: 'Mechas' },
+    { value: 'keratina', label: 'Tratamiento de keratina' },
+    { value: 'manicura', label: 'Manicura' },
+    { value: 'pedicura', label: 'Pedicura' },
+    { value: 'depilacion', label: 'Depilación' },
+    { value: 'maquillaje', label: 'Maquillaje' },
+    { value: 'masajeCapilar', label: 'Masaje capilar' }
+  ];
+
 
 
   useEffect(() => {
@@ -56,8 +83,109 @@ const Citas = () => {
 
   useEffect(actualizarEventos, [citas])
 
+
+  const handleModal = () => {
+    setShowModal(!showModal)
+  }
+
+  const submit = (data) => {
+    handleModal()
+    setCitas([...citas, { ...data, fecha: fechaSeleccionada.toString(), estado: "Espera", servicios: serviciosSeleccionados }])
+    setServiciosSeleccionados([])
+  }
+
   return (
     <Layout pagina="Citas">
+
+
+      <Modal show={showModal} onHide={handleModal} size="lg">
+        <Form onSubmit={handleSubmit(submit)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Agendar Nueva Cita</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Container>
+              <Row>
+                <Col>
+                  <Form.Group>
+                    <Form.Label>Cliente</Form.Label>
+                    <Typeahead
+                      id="cliente"
+                      {...register("cliente", { required: true })}
+                      onChange={(selected) => {
+                        setValue("cliente", selected[0]);
+                      }}
+                      options={clientes}
+                      placeholder="Seleccione un cliente"
+                      name="cliente"
+                      isInvalid={errors.cliente}
+                    />
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label>Peluquero</Form.Label>
+                    <Typeahead
+                      id="peluquero"
+                      {...register("peluquero", { required: true })}
+                      onChange={(selected) => {
+                        setValue("peluquero", selected[0]);
+                      }}
+                      options={peluqueros}
+                      placeholder="Seleccione un peluquero"
+                      name="peluquero"
+                      isInvalid={errors.peluquero}
+                    />
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label>Hora</Form.Label>
+                    <Form.Control
+                      {...register("hora", { required: true })}
+                      type="time"
+                      placeholder="Hora de la cita"
+                      isInvalid={errors.hora}
+                    />
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label>Servicios</Form.Label>
+                    <Select
+                      isMulti={true}
+                      options={servicios}
+                      value={serviciosSeleccionados}
+                      onChange={(selectedOptions) => {
+                        setServiciosSeleccionados(selectedOptions);
+                      }}
+                    />
+
+                  </Form.Group>
+
+                  <Form.Group>
+                    <Form.Label>Detalle</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      {...register("detalle", { required: true })}
+                      placeholder="Detalle de la cita"
+                      isInvalid={errors.detalle}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Container>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleModal}>
+              Cerrar
+            </Button>
+            <Button type="submit">Agendar</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
+
+
+
+
       <div className="flex flex-col w-full mx-10 lg:flex-row gap-3" >
         <div className="w-4/5 items-center mb-5 h-96 lg:w-6/12">
           <BigCalendar eventos={eventos} setFechaSeleccionada={setFechaSeleccionada} />
@@ -68,7 +196,7 @@ const Citas = () => {
             <h3>{fechaSeleccionada.format('dddd, D [de] MMMM')} </h3>
 
             <div className='block'>
-              <Button>
+              <Button onClick={handleModal}>
                 <div className="flex justify-between gap-2 items-center">
                   <div>Agendar</div>
                   <div className="flex align-middle items-center">
@@ -123,9 +251,22 @@ const Citas = () => {
                             {filaSeleccionada === index && (
                               <tr>
                                 <td colSpan="5">
-                                  <Accordion defaultActiveKey="0" className={`transition-all duration-500 ${filaSeleccionada === index ?  "visible" : "invisible"}`}>
+                                  <Accordion defaultActiveKey="0" className={`transition-all duration-500 ${filaSeleccionada === index ? "visible" : "invisible"}`}>
                                     <Accordion.Item eventKey="0">
-                                      <Accordion.Body>{cita.detalle}</Accordion.Body>
+                                      <Accordion.Body>
+                                        <div className='block text-center'>
+                                          <div>
+                                            {cita.detalle}
+                                          </div>
+                                          <div className='mt-3 font-bold'>
+                                            Servicios:
+                                          </div>
+                                          <div className='gap-3'>
+                                            {cita.servicios?.map((servicio) => <Badge bg="success" className='mx-1'>{servicio.label}</Badge>)}
+
+                                          </div>
+                                        </div>
+                                      </Accordion.Body>
                                     </Accordion.Item>
                                   </Accordion>
                                 </td>
