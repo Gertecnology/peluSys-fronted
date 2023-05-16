@@ -9,11 +9,12 @@ import {AiFillCaretRight, AiFillCaretLeft, AiFillCalendar} from "react-icons/ai"
 const localizer = momentLocalizer(moment);
 moment.locale('es');
 
-const BigCalendar = ({ eventos }) => {
+const BigCalendar = ({ eventos, setFechaSeleccionada }) => {
     const [selectedDate, setSelectedDate] = useState(Date.now());
 
     const handleDateSelect = (date) => {
         setSelectedDate(date);
+        setFechaSeleccionada(moment(date))
     };
 
     const customDayPropGetter = (date) => {
@@ -22,7 +23,8 @@ const BigCalendar = ({ eventos }) => {
                 className: 'bg-blue-300 text-white transition duration-500',
             };
         }
-        return {className: "transition duration-100 hover:bg-blue-100"};
+        return {className: "transition duration-100 hover:bg-blue-100",
+            };
     };
 
     const CustomToolbar = ({ label, onNavigate }) => {
