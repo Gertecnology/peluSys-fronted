@@ -22,12 +22,7 @@ const Producto = ({ }) => {
     const [productos, setProductos] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState([]);
-    const [opciones, setOpciones] = useState(
-        [
-            { id: 1, value: "Detalle" },
-            { id: 2, value: "Marca" }
-        ]
-    )
+    const [marcaSeleccionada, setMarcaSeleccionada] = useState("");
 
     const [iva, setIva] = useState(
         [
@@ -147,15 +142,15 @@ const Producto = ({ }) => {
 
     const handleSetEditar = (id) => {
         const producto = productos.find(p => p.id === id);
-        const proveedor = proveedores.find(p => p.id === producto.id_proveedor);
-        const marca = marcas.find(m => m.id === producto.id_marca);
+        setMarcaSeleccionada(marcas.find(m => m.id === producto.id_marca));
+        console.log(marcaSeleccionada)
         setProductoEditar(producto);
         handleModal();
         setValue("nombre", producto.nombre);
         setValue("proveedor", producto.id_proveedor);
         setValue("detalle", producto.detalle);
         setValue("precio", producto.precio);
-        setValue("marca", marca.id);
+        setValue("marca", marcaSeleccionada);
         setIsEditar(true);
         Object.keys(getValues()).forEach(key => setValue(key, producto[key]));
 
@@ -224,13 +219,12 @@ const Producto = ({ }) => {
     const handleRowClick = (id) => {
         const item = productos.find(p => p.id === id);
         setProductoSeleccionado(item);
-        setShow(true);
-        console.log(productoSeleccionado);
+        setShow(true)
     }
 
 
     const converter = (value) => {
-        if (value === 0.1) {
+        if (value === 0.1 || value === 1) {
             return 10;
         }
         else {
@@ -239,7 +233,7 @@ const Producto = ({ }) => {
     }
 
     const converterMarca = (id) => {
-        const marca = marcas.find(m => m.id_marca === id);
+        const marca = marcas.find(m => m.id === id);
         return marca?.nombre
     }
 
@@ -276,6 +270,9 @@ const Producto = ({ }) => {
                             <Form.Label>Marca</Form.Label>
 
                             <Form.Select {...register("marca", { required: true })}
+                                value={marcaSeleccionada}
+                                onChange={(e) => setMarcaSeleccionada(e.target.value)}
+
                             >
                                 <option defaultValue="" disabled selected hidden>Seleccione una Marca</option>
 
@@ -422,7 +419,7 @@ const Producto = ({ }) => {
                                 ) : (productos.map((producto, index) => (
                                     <tr key={index} onClick={() => handleRowClick(producto.id)}>
                                         <td>{producto.nombre}</td>
-                                        <td>{converterMarca(producto.marca)}</td>
+                                        <td>{converterMarca(producto.id_marca)}</td>
                                         <td>{producto.precio}</td>
                                         <td>{converter(producto.tipo_iva)}</td>
                                         <td>
@@ -446,7 +443,7 @@ const Producto = ({ }) => {
                 )}
             </div>
 
-            <Modal show={show} onHide={handleClose}>
+            <Modal show={isEditar ? "" : show} onHide={handleClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>{productoSeleccionado.nombre}</Modal.Title>
                 </Modal.Header>
