@@ -17,6 +17,8 @@ const Servicio = ({ }) => {
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [idEliminar, setIdEliminar] = useState(-1)
     const [servicioEditar, setServicioEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
     } = useForm();
@@ -132,7 +134,10 @@ const Servicio = ({ }) => {
 
     }
 
-
+    const handleSetDelete = (id) => {
+        setShowDeleteModal(true)
+        setIdEliminar(id);
+    }
     const handleDelete = (id) => {
         const api = `${process.env.API_URL}/servicios/eliminar/${id}`;
         const token = process.env.TOKEN;
@@ -144,7 +149,11 @@ const Servicio = ({ }) => {
             })
             .catch(() => {
                 toast.error('No se pudo Eliminar!');
-            });
+            })
+            .finally(() => {
+                setShowDeleteModal(false)
+                setIdEliminar(-1)
+            })
 
     }
 
@@ -265,7 +274,7 @@ const Servicio = ({ }) => {
                                                         <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
-                                                    <Button size="sm" variant="link" onClick={() => handleDelete(servicio.id)}>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(servicio.id)}>
                                                         <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
@@ -285,7 +294,7 @@ const Servicio = ({ }) => {
                                                     <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                         onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                 </Button>
-                                                <Button size="sm" variant="link" onClick={() => handleDelete(servicio.id)}>
+                                                <Button size="sm" variant="link" onClick={() => handleSetDelete(servicio.id)}>
                                                     <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                         onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                 </Button>
@@ -298,6 +307,27 @@ const Servicio = ({ }) => {
                         </Table>
                     </div>)}
             </div>
+
+            <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false) }}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Eliminar Servicio</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body>
+                    <p>¿Estás Seguro de que desea eliminar el Servicio?</p>
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <       Button variant="secondary" onClick={() => {
+                        setShowDeleteModal(false)
+                        setIdEliminar(-1)
+                    }}>
+                        Cancelar
+                    </Button>
+
+                    <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
+                </Modal.Footer>
+            </Modal>
         </Layout >
     );
 }

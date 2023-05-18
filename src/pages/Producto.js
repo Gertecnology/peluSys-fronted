@@ -514,7 +514,7 @@ const Producto = ({ }) => {
 
             <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false), setShowDetalleModal(false) }}>
                 <Modal.Header closeButton>
-                    <Modal.Title>Eliminar Cliente</Modal.Title>
+                    <Modal.Title>Eliminar Producto</Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body>
