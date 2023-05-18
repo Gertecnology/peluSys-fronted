@@ -15,19 +15,19 @@ const Producto = ({ }) => {
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
-    const [show, setShow] = useState(false);
+    const [showDetalleModal, setShowDetalleModal] = useState(false);
     const [productoEditar, setProductoEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
     } = useForm();
     const [productos, setProductos] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState([]);
-    const [marcaSeleccionada, setMarcaSeleccionada] = useState("");
+    const [marcaSeleccionada, setMarcaSeleccionada] = useState([]);
 
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
-            { id: 2, value: 0.5 }
+            { id: 2, value: 0.05 }
         ]
     )
 
@@ -43,6 +43,8 @@ const Producto = ({ }) => {
     const [marcas, setMarcas] = useState([]);
     const [proveedores, setProveedores] = useState([]);
     const [valor, setValor] = useState("");
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [idEliminar, setIdEliminar] = useState(-1)
 
 
     useEffect(() => {
@@ -153,7 +155,6 @@ const Producto = ({ }) => {
     const handleSetEditar = (id) => {
         const producto = productos.find(p => p.id === id);
         setMarcaSeleccionada(marcas.find(m => m.id === producto.id_marca));
-        console.log(marcaSeleccionada)
         setProductoEditar(producto);
         handleModal();
         setValue("nombre", producto.nombre);
@@ -188,10 +189,16 @@ const Producto = ({ }) => {
             .finally(() => {
                 setProductoEditar(undefined);
                 setIsEditar(false);
+                setShowDetalleModal(false);
 
             })
         handleModal();
 
+    }
+
+    const handleSetDelete = (id) => {
+        setShowDeleteModal(true)
+        setIdEliminar(id);
     }
 
     const handleDelete = (id) => {
@@ -205,7 +212,12 @@ const Producto = ({ }) => {
             })
             .catch(() => {
                 toast.error('No se pudo Eliminar!');
-            });
+            })
+            .finally(() => {
+                setShowDeleteModal(false)
+                setIdEliminar(-1)
+                setShowDetalleModal(false);
+            })
 
     }
 
@@ -241,11 +253,12 @@ const Producto = ({ }) => {
 
     }
 
-    const handleClose = () => setShow(false);
+    const handleClose = () => setShowDetalleModal(false);
     const handleRowClick = (id) => {
         const item = productos.find(p => p.id === id);
         setProductoSeleccionado(item);
-        setShow(true)
+        setShowDetalleModal(true)
+
     }
 
 
@@ -271,7 +284,7 @@ const Producto = ({ }) => {
     return (
         <Layout pagina={"Producto"} titulo={"CRUD Producto"} ruta={ruta.pathname}>
 
-            <Modal show={showModal} onHide={handleModal}>
+            <Modal show={showModal} onHide={() =>{ handleModal(), setShowDetalleModal(false) }}>
                 <Form
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
@@ -295,18 +308,20 @@ const Producto = ({ }) => {
                         <Form.Group>
                             <Form.Label>Marca</Form.Label>
 
-                            <Form.Select {...register("marca", { required: true })}
-                                value={marcaSeleccionada}
-                                onChange={(e) => setMarcaSeleccionada(e.target.value)}
-
-                            >
-                                <option defaultValue="" disabled selected hidden>Seleccione una Marca</option>
-
-                                {marcas?.map((marca) => (
-                                    <option key={marca.id} value={marca.id}>{marca.nombre}</option>
-                                ))}
-                            </Form.Select>
-
+                            <div className="flex gap-2">
+                                <Form.Select {...register("marca", { required: true })}
+                                    value={marcaSeleccionada}
+                                    onChange={(e) => setMarcaSeleccionada(e.target.value)}
+                                >
+                                    <option defaultValue="" disabled selected hidden>Seleccione una Marca</option>
+                                    {marcas?.map((marca) => (
+                                        <option key={marca.id} value={marca.id}>{marca.nombre}</option>
+                                    ))}
+                                </Form.Select>
+                                <Button variant="success">
+                                    +
+                                </Button>
+                            </div>
 
                         </Form.Group>
 
@@ -337,14 +352,18 @@ const Producto = ({ }) => {
                         </Form.Group>
                         <Form.Group>
                             <Form.Label>Proveedor</Form.Label>
-                            <Form.Select {...register("proveedor", { required: true })}
-                            >
-                                <option value="" disabled selected hidden>Seleccione un Proveedor</option>
-
-                                {proveedores?.map((proveedor) => (
-                                    <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
-                                ))}
-                            </Form.Select>
+                            <div className="flex gap-2">
+                                <Form.Select {...register("proveedor", { required: true })}
+                                >
+                                    <option value="" disabled selected hidden>Seleccione un Proveedor</option>
+                                    {proveedores?.map((proveedor) => (
+                                        <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
+                                    ))}
+                                </Form.Select>
+                                <Button variant="success">
+                                    +
+                                </Button>
+                            </div>
                         </Form.Group>
 
                         <Form.Group>
@@ -362,7 +381,7 @@ const Producto = ({ }) => {
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={handleModal}>
+                        <Button variant="secondary" onClick={() => {handleModal(), setShowDetalleModal(false)}}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">
@@ -441,7 +460,7 @@ const Producto = ({ }) => {
                                                         <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
-                                                    <Button size="sm" variant="link" onClick={() => handleDelete(producto.id)}>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(producto.id)}>
                                                         <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
@@ -463,7 +482,7 @@ const Producto = ({ }) => {
                                                     <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                         onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                 </Button>
-                                                <Button size="sm" variant="link" onClick={() => handleDelete(producto.id)}>
+                                                <Button size="sm" variant="link" onClick={() => handleSetDelete(producto.id)}>
                                                     <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                         onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                 </Button>
@@ -478,7 +497,7 @@ const Producto = ({ }) => {
                 )}
             </div>
 
-            <Modal show={isEditar ? "" : show} onHide={handleClose}>
+            <Modal show={(showDeleteModal || showModal) ? "" : showDetalleModal} onHide={(handleClose)}>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         <h1 className="text-3xl font-bold">{productoSeleccionado.nombre}</h1>
@@ -490,6 +509,29 @@ const Producto = ({ }) => {
 
                 </Modal.Body>
 
+            </Modal>
+
+
+            <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false), setShowDetalleModal(false) }}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Eliminar Cliente</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body>
+                    <p>¿Estás Seguro de que desea eliminar el Producto?</p>
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <       Button variant="secondary" onClick={() => {
+                        setShowDeleteModal(false)
+                        setIdEliminar(-1)
+                        setShowDetalleModal(false)
+                    }}>
+                        Cancelar
+                    </Button>
+
+                    <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
+                </Modal.Footer>
             </Modal>
         </Layout >
     );
