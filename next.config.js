@@ -7,7 +7,7 @@ module.exports =
 
   env: {
     API_URL: "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api",
-    TOKEN: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9BRE1JTklTVFJBRE9SIiwiUk9MRV9ERVYiXSwiaWF0IjoxNjg0MzYyNjU3LCJleHAiOjE2ODQ0Mjc0NTd9.MyFgT4uTI8VgbSXamhb1hqTdteiQho7Lp207E-ukzyU"
+    TOKEN: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0Iiwicm9sZXMiOlsiUk9MRV9ERVYiLCJST0xFX0FETUlOSVNUUkFET1IiXSwiaWF0IjoxNjg0NDQ3MTg1LCJleHAiOjE2ODQ1MTE5ODV9.ajPec4KfNCAo7FVGOpOF5JogI1fyMF8MDLZJock9upc"
   }
 }
 

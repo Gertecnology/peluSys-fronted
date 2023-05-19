@@ -15,6 +15,7 @@ const Producto = ({ }) => {
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
+    const [showNuevaMarcaModal, setShowNuevaMarcaModal] = useState(false);
     const [showDetalleModal, setShowDetalleModal] = useState(false);
     const [productoEditar, setProductoEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
@@ -23,7 +24,6 @@ const Producto = ({ }) => {
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState([]);
     const [marcaSeleccionada, setMarcaSeleccionada] = useState([]);
-
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -43,6 +43,7 @@ const Producto = ({ }) => {
     const [marcas, setMarcas] = useState([]);
     const [proveedores, setProveedores] = useState([]);
     const [valor, setValor] = useState("");
+    const [nombreMarca, setNombreMarca] = useState("");
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
 
@@ -51,6 +52,7 @@ const Producto = ({ }) => {
         obtenerDatos();
         obtenerMarcas();
         obtenerProveedores();
+        console.log(marcas);
     }, [])
 
     useEffect(() => {
@@ -137,7 +139,6 @@ const Producto = ({ }) => {
         )
             .then((response) => {
                 toast.success('Producto Agregado');
-                obtenerDatos();
             })
             .catch((error) => {
                 toast.error('No se pudo agregar el producto!"');
@@ -224,7 +225,6 @@ const Producto = ({ }) => {
     const handleFiltrar = (n) => {
         setCargando(true);
         setIsBuscar(true);
-        console.log(opcionSeleccionada)
 
         if (parseInt(opcionSeleccionada) === 1) {
             const api = `${process.env.API_URL}/producto/buscar?nombre=${n}&marca=""`;
@@ -281,10 +281,38 @@ const Producto = ({ }) => {
         return proveedor?.nombre
     }
 
+    const marcaSubmit = () => {
+        const token = process.env.TOKEN;
+        handleModal()
+        const api = `${process.env.API_URL}/marca/guardar/`;
+
+        axios.post(
+            api,
+            {
+                nombre: nombreMarca,
+
+            },
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                toast.success('Marca Agregada con Exito');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar la Marca!!!');
+                console.log(error);
+            })
+            .finally(() => {
+                obtenerMarcas();
+                setShowModal(true);
+                setNombreMarca("");
+            })
+
+    }
+
     return (
         <Layout pagina={"Producto"} titulo={"CRUD Producto"} ruta={ruta.pathname}>
 
-            <Modal show={showModal} onHide={() =>{ handleModal(), setShowDetalleModal(false) }}>
+            <Modal show={showModal} onHide={() => { handleModal(), setShowDetalleModal(false) }}>
                 <Form
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
@@ -318,7 +346,7 @@ const Producto = ({ }) => {
                                         <option key={marca.id} value={marca.id}>{marca.nombre}</option>
                                     ))}
                                 </Form.Select>
-                                <Button variant="success">
+                                <Button variant="success" onClick={() => { setShowNuevaMarcaModal(true), setShowModal(false), setShowDetalleModal(false) }}>
                                     +
                                 </Button>
                             </div>
@@ -381,7 +409,7 @@ const Producto = ({ }) => {
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={() => {handleModal(), setShowDetalleModal(false)}}>
+                        <Button variant="secondary" onClick={() => { handleModal(), setShowDetalleModal(false) }}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">
@@ -533,6 +561,38 @@ const Producto = ({ }) => {
                     <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
                 </Modal.Footer>
             </Modal>
+
+            <Modal show={showNuevaMarcaModal} onHide={() => { setShowNuevaMarcaModal(false) }}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Agregar Nueva Marca</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+
+                    <Form.Group>
+                        <Form.Label>Nombre de la Marca</Form.Label>
+                        <Form.Control
+                            type="text"
+                            placeholder="Ingrese el nombre de la Marca"
+                            isInvalid={errors.nombre}
+                            value={nombreMarca}
+                            onChange={e => setNombreMarca(e.target.value)}
+
+                        />
+                    </Form.Group>
+
+
+
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => { setShowNuevaMarcaModal(false), setShowModal(true) }}>
+                        Cerrar
+                    </Button>
+                    <Button variant="primary" type="submit" onClick={() => marcaSubmit()}>
+                        Guardar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </Layout >
     );
 }
