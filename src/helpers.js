@@ -14,7 +14,19 @@ function getFechaActual() {
     // Devolver la fecha actual
     return fechaFormateada;
   }
+
+  function convertirHora(horaString) {
+    const [hora, minuto] = horaString.split(':');
+    
+    return  {
+        hour: parseInt(hora),
+        minute: parseInt(minuto),
+        second: 0,
+        nano: 0
+      }
+    
+  }
   
   // Exportar la función
-  module.exports = { getFechaActual };
+  module.exports = { getFechaActual, convertirHora };
   

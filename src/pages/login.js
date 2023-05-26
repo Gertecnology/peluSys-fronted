@@ -18,7 +18,7 @@ const Login = () => {
 
     const onSubmit = async (data) => {
         const respuesta = await fetchUser(data);
-        if(respuesta.status || respuesta.code){
+        if(respuesta.status || respuesta.code || respuesta.mensaje){
             setSubmitError(true);
             return
         }
@@ -72,8 +72,8 @@ const Login = () => {
                                     required: true
                                 })}
 
-                                isInvalid={errors.email}
-                                placeholder="Ingrese su Email"
+                                isInvalid={errors.username}
+                                placeholder="Ingrese su Usuario"
                             />
                         </Form.Group>
 

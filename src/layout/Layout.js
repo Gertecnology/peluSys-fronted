@@ -59,11 +59,11 @@ const Layout = ({ children, pagina }) => {
         <title>CRUD - {pagina}</title>
       </Head>
       <div className={`md:flex`}>
-        <aside className="md:w-3/12 bg-blueEdition">
+        <aside className="md:w-21/12 bg-blueEdition">
           <Sidebar />
         </aside>
 
-        <div className="md:w-9/12 bg-bgEdition ">
+        <div className="md:w-10/12 bg-bgEdition ">
           <div className="grid grid-flow-row-2">
             <div className={`${styles.border}`} >
               <Header />

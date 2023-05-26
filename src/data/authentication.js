@@ -1,6 +1,6 @@
 export const fetchUser = async (data) => {
     try {
-        const respuesta = await fetch("http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/auth/signin", {
+        const respuesta = await fetch(`${process.env.API_URL}auth/signin`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
