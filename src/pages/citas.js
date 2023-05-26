@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import BigCalendar from '../shared/BigCalendar';
 import Layout from '@/layout/Layout';
 import moment from 'moment';
@@ -9,54 +9,52 @@ import { FiEdit2 } from 'react-icons/fi';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { useForm } from 'react-hook-form';
 import Select from "react-select"
+import axios from "axios"
+import { AuthContext } from './contexts/AuthContext';
+import { convertirHora } from '@/helpers';
+import { toast } from "react-toastify";
 
 
 const Citas = () => {
+  const {user} = useContext(AuthContext)
   const [eventos, setEventos] = useState([])
-  const [citas, setCitas] = useState([
-    { fecha: '2023-05-01', hora: '08:00', detalle: 'El cliente solicitó un corte de pelo de estilo X', cliente: 'Cliente 1', peluquero: 'Peluquero 1', estado: 'Espera' },
-    { fecha: '2023-05-01', hora: '10:30', detalle: 'El cliente quiere un tintado de cabello de color X', cliente: 'Cliente 2', peluquero: 'Peluquero 2', estado: 'Espera' },
-    { fecha: '2023-05-02', hora: '09:15', detalle: 'El cliente solicitó un corte de pelo de estilo Y', cliente: 'Cliente 3', peluquero: 'Peluquero 3', estado: 'Espera' },
-    { fecha: '2023-05-02', hora: '14:00', detalle: 'El cliente quiere un peinado para una ocasión especial', cliente: 'Cliente 4', peluquero: 'Peluquero 4', estado: 'Espera' },
-    { fecha: '2023-05-03', hora: '11:30', detalle: 'El cliente quiere un cambio de look radical', cliente: 'Cliente 5', peluquero: 'Peluquero 5', estado: 'Espera' },
-    { fecha: '2023-05-03', hora: '16:45', detalle: 'El cliente solicita un tratamiento para hidratar su cabello', cliente: 'Cliente 6', peluquero: 'Peluquero 6', estado: 'Espera' },
-    { fecha: '2023-05-04', hora: '13:15', detalle: 'El cliente quiere un cambio de color en su cabello', cliente: 'Cliente 7', peluquero: 'Peluquero 7', estado: 'Espera' },
-    { fecha: '2023-05-05', hora: '15:30', detalle: 'El cliente solicita un corte de pelo clásico', cliente: 'Cliente 8', peluquero: 'Peluquero 8', estado: 'Espera' },
-    { fecha: '2023-05-05', hora: '17:45', detalle: 'El cliente quiere un peinado para una fiesta', cliente: 'Cliente 9', peluquero: 'Peluquero 9', estado: 'Espera' },
-    { fecha: '2023-05-11', hora: '11:30', detalle: 'El cliente quiere un corte de pelo moderno', cliente: 'Cliente 10', peluquero: 'Peluquero 10', estado: 'Espera' },
-  ])
+  const [citas, setCitas] = useState([])
   const [fechaSeleccionada, setFechaSeleccionada] = useState(moment())
   const [filaSeleccionada, setFilaSeleccionada] = useState(-1)
   const { register, handleSubmit, formState: { errors, isValid }, setValue, watch, getValues, clearErrors, } = useForm()
   const [showModal, setShowModal] = useState(false)
-  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([])
+  const [serviciosSeleccionados, setServiciosSeleccionados] = useState([])  
+  const [clientes,setClientes] = useState([])
+  const [servicios, setServicios] = useState([])
+  const [peluqueros, setPeluqueros] = useState([])
 
-  const clientes = [
-    "Pedro Perez", "Juan García", "María Sosa", "Mario Ojeda"
-  ]
+  useEffect( () => {
+    obtenerDatos()
+    obtenerClientes()
+    obtenerServicios()
+    obtenerPeluqueros()
+  }, [] )
 
-  const peluqueros = [
-    "María López", "Pedro Rodríguez", "Ana Martínez", "Luis Fernández"
-  ]
-  const servicios = [
-    { value: 'cortePelo', label: 'Corte de pelo' },
-    { value: 'peinadoEventos', label: 'Peinado para eventos' },
-    { value: 'coloracion', label: 'Coloración' },
-    { value: 'mechas', label: 'Mechas' },
-    { value: 'keratina', label: 'Tratamiento de keratina' },
-    { value: 'manicura', label: 'Manicura' },
-    { value: 'pedicura', label: 'Pedicura' },
-    { value: 'depilacion', label: 'Depilación' },
-    { value: 'maquillaje', label: 'Maquillaje' },
-    { value: 'masajeCapilar', label: 'Masaje capilar' }
-  ];
-
-
+  useEffect(() => console.log(servicios), [servicios])
 
   useEffect(() => {
     if (!fechaSeleccionada) return
     setFilaSeleccionada(-1)
   }, [fechaSeleccionada])
+
+  const obtenerDatos = () => {
+    if (!user) return
+    const api = `${process.env.API_URL}api/cita/page`;
+    const token = user.accessToken;
+    axios.get(api, {} ,{ headers: { "Authorization": `Bearer ${token}` } })
+        .then(res => {
+            setCitas(res.data.content);
+        })
+        .catch((error) => {
+            console.log(error)
+        });
+
+}
 
   const actualizarEventos = () => {
     const eventosActualizados = citas.reduce((eventos, cita) => {
@@ -90,9 +88,83 @@ const Citas = () => {
 
   const submit = (data) => {
     handleModal()
-    setCitas([...citas, { ...data, fecha: fechaSeleccionada.toString(), estado: "Espera", servicios: serviciosSeleccionados }])
-    setServiciosSeleccionados([])
+    if(!user) return
+    const api = `${process.env.API_URL}api/cita/nuevo`;
+    const token = user.accessToken
+    handleModal()
+
+    const datos = {
+      nombre_cliente : data.nombre_cliente,
+      nombre_empleado: data.nombre_empleado.split(" ")[0],
+      horaEstimada: convertirHora(data.horaEstimada),
+      detalle: data.detalle,
+      estado_cita: "ESPERA",
+      estado_pago: "PENDIENTE",
+      fechaEstimada: fechaSeleccionada.format("YYYY-MM-DD"),
+      servicio: null,//servicios.filter(servicio => serviciosSeleccionados.map(s => s.value).includes(servicio.detalle))
+    }
+
+    console.log(datos)
+    return
+    axios.post(
+        api,
+        datos,
+        { headers: { "Authorization": `Bearer ${token}` } }
+    )
+        .then((response) => {
+            obtenerDatos();
+            toast.success('cliente Agregado');
+        })
+        .catch((error) => {
+            console.log(error)
+            toast.error('No se pudo agregar!"');
+        });
+
   }
+
+  const obtenerClientes = () => {
+    if (!user) return
+    const token = user.accessToken;
+    const api = `${process.env.API_URL}api/clientes/`;
+    
+    axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
+        .then(res => {
+            setClientes(res.data);
+        })
+        .catch((error) => {
+            console.log(error)
+        });
+}
+
+const obtenerServicios = () => {
+  if (!user) return
+  const token = user.accessToken;
+  const api = `${process.env.API_URL}api/servicios/`;
+  
+  axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
+      .then(res => {
+          setServicios(res.data);
+      })
+      .catch((error) => {
+          console.log(error)
+      });
+}
+
+
+const obtenerPeluqueros = () => {
+  if (!user) return
+  const api = `${process.env.API_URL}api/empleado/`;
+  const token = user.accessToken;
+  axios.get(api, {} ,{ headers: { "Authorization": `Bearer ${token}` } })
+      .then(res => {
+         const empleados = res.data.content
+         setPeluqueros(empleados.filter(empleado => empleado.cargo === "PELUQUERO"))
+      })  
+      .catch((error) => {
+          console.log(error)
+      });
+
+}
 
   return (
     <Layout pagina="Citas">
@@ -111,14 +183,14 @@ const Citas = () => {
                     <Form.Label>Cliente</Form.Label>
                     <Typeahead
                       id="cliente"
-                      {...register("cliente", { required: true })}
+                      {...register("nombre_cliente", { required: true })}
                       onChange={(selected) => {
-                        setValue("cliente", selected[0]);
+                        setValue("nombre_cliente", selected[0]);
                       }}
-                      options={clientes}
+                      options={clientes?.map(cliente => cliente.nombre)}
                       placeholder="Seleccione un cliente"
                       name="cliente"
-                      isInvalid={errors.cliente}
+                      isInvalid={errors.nombre_cliente}
                     />
                   </Form.Group>
 
@@ -126,38 +198,37 @@ const Citas = () => {
                     <Form.Label>Peluquero</Form.Label>
                     <Typeahead
                       id="peluquero"
-                      {...register("peluquero", { required: true })}
+                      {...register("nombre_empleado", { required: true })}
                       onChange={(selected) => {
-                        setValue("peluquero", selected[0]);
+                        setValue("nombre_empleado", selected[0]);
                       }}
-                      options={peluqueros}
+                      options={peluqueros?.map(peluquero => peluquero.nombre+" "+peluquero.apellido)}
                       placeholder="Seleccione un peluquero"
                       name="peluquero"
-                      isInvalid={errors.peluquero}
+                      isInvalid={errors.nombre_empleado}
                     />
                   </Form.Group>
 
                   <Form.Group>
                     <Form.Label>Hora</Form.Label>
                     <Form.Control
-                      {...register("hora", { required: true })}
+                      {...register("horaEstimada", { required: true })}
                       type="time"
                       placeholder="Hora de la cita"
-                      isInvalid={errors.hora}
+                      isInvalid={errors.horaEstimada}
                     />
                   </Form.Group>
 
                   <Form.Group>
-                    <Form.Label>Servicios</Form.Label>
+                    <Form.Label onClick={() => console.log(serviciosSeleccionados)}>Servicios</Form.Label>
                     <Select
                       isMulti={true}
-                      options={servicios}
+                      options={servicios?.map(s => {return {value:s.detalle,label:s.detalle} }) }
                       value={serviciosSeleccionados}
                       onChange={(selectedOptions) => {
                         setServiciosSeleccionados(selectedOptions);
                       }}
                     />
-
                   </Form.Group>
 
                   <Form.Group>
@@ -177,7 +248,7 @@ const Citas = () => {
             <Button variant="secondary" onClick={handleModal}>
               Cerrar
             </Button>
-            <Button type="submit">Agendar</Button>
+            <Button type="submit" variant="success">Agendar</Button>
           </Modal.Footer>
         </Form>
       </Modal>
@@ -196,7 +267,7 @@ const Citas = () => {
             <h3>{fechaSeleccionada.format('dddd, D [de] MMMM')} </h3>
 
             <div className='block'>
-              <Button onClick={handleModal}>
+              <Button variant='success' onClick={handleModal}>
                 <div className="flex justify-between gap-2 items-center">
                   <div>Agendar</div>
                   <div className="flex align-middle items-center">

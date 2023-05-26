@@ -15,25 +15,40 @@ const Cliente = ({ }) => {
     const [showModal, setShowModal] = useState(false);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
     } = useForm();
-    const [clientes, setclientes] = useState([])
+    const { register: registerBuscar, handleSubmit: handleSubmitBuscar } = useForm()
+    const [clientes, setClientes] = useState([])
     const [isEditar, setIsEditar] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(undefined)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
-  
+
 
     useEffect(() => {
         obtenerDatos();
-    }), [clientes]
+    }, [])
 
 
     const obtenerDatos = () => {
         if (!user) return
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/clientes/";
+        const api = `${process.env.API_URL}api/clientes/`;
         const token = user.accessToken;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
-                setclientes(res.data);
+                setClientes(res.data);
+            })
+            .catch((error) => {
+                console.log(error)
+            });
+
+    }
+
+    const buscarDatos = (data) => {
+        if (!user) return
+        const api = `${process.env.API_URL}api/clientes/buscar/${data.nombre}&${data.ruc}`;
+        const token = user.accessToken;
+        axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
+            .then(res => {
+                setClientes(res.data);
             })
             .catch((error) => {
                 console.log(error)
@@ -49,10 +64,11 @@ const Cliente = ({ }) => {
 
     // guardo un nuevo cliente
     const formSubmit = (data) => {
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/clientes/guardar/";
+        if (!user) return
+        const api = `${process.env.API_URL}api/clientes/guardar/`;
         const token = user.accessToken
         handleModal()
-        Object.keys(data).forEach( (key) => data[key] = data[key] === null ? "" : data[key] )
+        Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
 
         axios.post(
             api,
@@ -64,6 +80,7 @@ const Cliente = ({ }) => {
             { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
+                obtenerDatos()
                 toast.success('cliente Agregado');
             })
             .catch((error) => {
@@ -84,7 +101,7 @@ const Cliente = ({ }) => {
 
     const handleEditar = (data) => {
         if (!user) return
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/clientes/actualizar/" + clienteEditar.id;
+        const api = `${process.env.API_URL}api/clientes/actualizar/` + clienteEditar.id;
         const token = user.accessToken
         axios.post(
             api,
@@ -116,8 +133,8 @@ const Cliente = ({ }) => {
     }
 
     const handleDelete = (id) => {
-        if(!id || !user) return
-        const api = `http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/clientes/eliminar/${id}`;
+        if (!id || !user) return
+        const api = `${process.env.API_URL}api/clientes/eliminar/${id}`;
         const token = user.accessToken;
         axios.delete(api,
             { headers: { "Authorization": `Bearer ${token}` } })
@@ -127,11 +144,10 @@ const Cliente = ({ }) => {
             .catch((error) => {
                 console.log(error)
                 toast.error('No se pudo Eliminar!"');
-            }).finally(()=>{
+            }).finally(() => {
                 setShowDeleteModal(false)
                 setIdEliminar(-1)
             })
-
     }
 
     return (
@@ -148,9 +164,9 @@ const Cliente = ({ }) => {
 
                 <Modal.Footer>
                     <       Button variant="secondary" onClick={() => {
-                             setShowDeleteModalModal(false)
-                             setIdEliminar(-1)
-                             }}>
+                        setShowDeleteModalModal(false)
+                        setIdEliminar(-1)
+                    }}>
                         Cancelar
                     </Button>
 
@@ -230,28 +246,35 @@ const Cliente = ({ }) => {
                 </Form>
             </Modal>
 
+
             <div className="block">
-                <div className="px-5 flex justify-between gap-3">
+                <Form onSubmit={handleSubmitBuscar(buscarDatos) }>
+                    <div className="px-5 flex justify-between gap-3">
 
-                    <Form.Control
-                        className="w-1/6"
-                        placeholder="Nombre del cliente"
-                    />
-                    <Form.Control
-                        className="w-1/6"
-                        placeholder="RUC"
-                    />
+                        <Form.Control
+                            {...registerBuscar("nombre")}
+                            className="w-1/6"
+                            placeholder="Nombre del cliente"
+                            
+                        />
+                        <Form.Control
+                            {...registerBuscar("ruc")}
+                            className="w-1/6"
+                            placeholder="RUC"
+                        />
 
-                    <Button variant="secondary" className="text-xs">
-                        <div className="flex justify-between gap-2 items-center">
-                            <div>Buscar</div>
-                            <div className="flex align-middle items-center"><FaSearch /></div>
-                        </div>
-                    </Button>
+                        <Button variant="secondary" className="text-xs" type="subtmit">
+                            <div className="flex justify-between gap-2 items-center">
+                                <div>Buscar</div>
+                                <div className="flex align-middle items-center"><FaSearch /></div>
+                            </div>
+                        </Button>
 
-                    <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Cliente</Button>
+                        <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Cliente</Button>
 
-                </div>
+                    </div>
+                </Form>
+
 
                 <div className="px-5 mt-2 h-96 overflow-y-scroll">
                     <Table bordered hover size="sm" className="bg-white mt-10">

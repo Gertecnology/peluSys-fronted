@@ -9,6 +9,8 @@ import { AuthContext } from "./contexts/AuthContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { getFechaActual } from "@/helpers";
+import { FiEdit2 } from "react-icons/fi";
+import { AiOutlineDelete } from "react-icons/ai";
 const Empleados = ({ }) => {
     const { user } = useContext(AuthContext);
     const [showModal, setShowModal] = useState(false);
@@ -33,6 +35,13 @@ const Empleados = ({ }) => {
         "RRHH": "ROLE_RRHH",
         "Usuario": "ROLE_USER"
     }
+
+    const cargos = {
+        "Gerente": "GERENTE",
+        "Peluquero": "PELUQUERO",
+        "Recepcionista": "RECEPCIONISTA",
+        "RRHH": "RRHH",
+    }
     const tiposSangre = {
         "0+": "TIPO_0_POSITIVO",
         "0-": "TIPO_0_NEGATIVO",
@@ -47,16 +56,16 @@ const Empleados = ({ }) => {
 
     useEffect(() => {
         obtenerDatos();
-    }), [empleados]
+    },[])
 
 
     const obtenerDatos = () => {
         if (!user) return
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleado";
+        const api = `${process.env.API_URL}api/empleado/`;
         const token = user.accessToken;
-        axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
+        axios.get(api, {} ,{ headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
-                setEmpleados(res.data);
+               setEmpleados(res.data.content)
             })
             .catch((error) => {
                 console.log(error)
@@ -79,16 +88,16 @@ const Empleados = ({ }) => {
 
     const formSubmit = (data) => {
         
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleado/nuevo";
+        const api = `${process.env.API_URL}api/empleado/nuevo`;
         console.log(api)
         const token = user.accessToken
         setShowSiguienteModal(false)
         Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
-        console.log({...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual(),fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0})
+        console.log({...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual(),fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0, salario:Number(datosForm["salario"]),photo:[""]})
 
         axios.post(
             api,
-            {...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual() ,fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0, salario:Number(datosForm["salario"])} ,
+            {...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual() ,fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0, salario:Number(datosForm["salario"]),photo:[""]} ,
             { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
@@ -112,7 +121,7 @@ const Empleados = ({ }) => {
 
     const handleEditar = (data) => {
         if (!user) return
-        const api = "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleados/actualizar/" + empleadoEditar.id;
+        const api = `${process.env.API_URL}api/empleados/actualizar/` + empleadoEditar.id;
         const token = user.accessToken
         axios.post(
             api,
@@ -143,12 +152,13 @@ const Empleados = ({ }) => {
 
     const handleDelete = (id) => {
         if (!id || !user) return
-        const api = `http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/api/empleados/eliminar/${id}`;
+        const api = `${process.env.API_URL}api/empleados/eliminar/${id}`;
         const token = user.accessToken;
         axios.delete(api,
             { headers: { "Authorization": `Bearer ${token}` } })
             .then(() => {
                 toast.success('empleado Eliminado');
+                obtenerDatos()
             })
             .catch((error) => {
                 console.log(error)
@@ -273,6 +283,24 @@ const Empleados = ({ }) => {
                                             <option selected key={""} value={""}>Seleccione Una opción</option>
                                             {Object.keys(tiposSangre).map((key) => (
                                                 <option key={key} value={tiposSangre[key]}>
+                                                    {key}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                    <Form.Group>
+                                        <Form.Label>Cargo</Form.Label>
+                                        <Form.Select
+                                            {...register("cargo", {
+                                                required: true, validate: {
+                                                    seleccionado: v => v !== ""
+                                                }
+                                            })}
+                                            isInvalid={errors.cargo}
+                                        >
+                                            <option selected key={""} value={""}>Seleccione Una opción</option>
+                                            {Object.keys(cargos).map((key) => (
+                                                <option key={cargos[key]} value={cargos[key]}>
                                                     {key}
                                                 </option>
                                             ))}
@@ -464,32 +492,34 @@ const Empleados = ({ }) => {
 
                 </div>
 
-                <div className="px-5">
-                    <Table bordered hover size="sm" className="bg-white mt-3">
-                        <thead>
+                <div className="px-5 mt-2 h-96 overflow-y-scroll">
+                    <Table bordered hover size="sm" className="bg-white mt-10">
+                        <thead className="sticky top-0 bg-white">
                             <tr>
-                                <th>Perfil</th>
+                                <th>Cedula</th>
                                 <th>Nombre</th>
                                 <th>Apellido</th>
-                                <th>Cedula de Identidad</th>
-                                <th>Nacionalidad</th>
+                                <th>Cargo</th>
                                 <th className="w-1/12">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {empleados.map((empleado, index) => (
+                            {empleados?.map((empleado, index) => (
                                 <tr key={index}>
-                                    <td className="flex text-center align-middle justify-center ">
-                                        <img src={empleado.fotoPerfil.name} width={75} height={75} />
-                                    </td>
+                                    <td>{empleado.cedula}</td>
                                     <td>{empleado.nombre}</td>
                                     <td>{empleado.apellido}</td>
-                                    <td>{empleado.cedula}</td>
-                                    <td>{empleado.nacionalidad}</td>
+                                    <td className="">{empleado.cargo}</td>
                                     <td>
                                         <div className="flex gap-2 ">
-                                            <Button size="sm" variant="primary" onClick={() => handleSetEditar(empleado.id)}>Editar</Button> {" "}
-                                            <Button size="sm" variant="danger" onClick={() => handleSetDelete(empleado.id)} >Eliminar</Button>
+                                            <Button size="sm" variant="link" onClick={() => handleSetEditar(cliente.id)}>
+                                                <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                            <Button size="sm" variant="link" onClick={() => handleSetDelete(cliente.id)}>
+                                                <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
                                         </div>
                                     </td>
                                 </tr>
