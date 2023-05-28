@@ -28,7 +28,6 @@ const Proveedor = ({ }) => {
 
     useEffect(() => {
         obtenerProveedores();
-        console.log(proveedores)
     }, [])
 
 
@@ -68,7 +67,6 @@ const Proveedor = ({ }) => {
     // guardo un nuevo servicio
     const formSubmit = (data) => {
         const token = process.env.TOKEN;
-        console.log(data.id);
         handleModal()
         const api = `${process.env.API_URL}/proveedores/guardar`;
 
@@ -163,7 +161,6 @@ const Proveedor = ({ }) => {
             { headers: { "Authorization": `Bearer ${token}` } })
             .then((res) => {
                 setProveedorFiltrados(res.data);
-                console.log(res.data.id)
             });
         setTimeout(() => {
             setCargando(false);
