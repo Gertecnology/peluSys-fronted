@@ -10,7 +10,7 @@ import { useRouter } from 'next/router'
 
 
 
-const Servicio = ({ }) => {
+const Proveedor = ({ }) => {
     const ruta = useRouter();
 
     const [showModal, setShowModal] = useState(false);
@@ -375,4 +375,4 @@ const Servicio = ({ }) => {
 }
 
 
-export default Servicio;
+export default Proveedor;
