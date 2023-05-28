@@ -25,9 +25,18 @@ const Proveedor = ({ }) => {
     const [proveedores, setProveedores] = useState([]);
     const [proveedorFiltrados, setProveedorFiltrados] = useState([]);
     const [valor, setValor] = useState("");
+    const [opcionSeleccionada, setOpcionSeleccionada] = useState("")
+    const [opciones, setOpciones] = useState(
+        [
+            { id: 1, value: "Nombre" },
+            { id: 2, value: "RUC" }
+        ]
+    )
+
 
     useEffect(() => {
         obtenerProveedores();
+        console.log(proveedores)
     }, [])
 
 
@@ -67,6 +76,7 @@ const Proveedor = ({ }) => {
     // guardo un nuevo servicio
     const formSubmit = (data) => {
         const token = process.env.TOKEN;
+        console.log(data.id);
         handleModal()
         const api = `${process.env.API_URL}/proveedores/guardar`;
 
@@ -155,13 +165,18 @@ const Proveedor = ({ }) => {
     const handleFiltrar = (n) => {
         setCargando(true);
         setIsBuscar(true);
-        const api = `${process.env.API_URL}/proveedores/buscarNombre?nombre=${n}`;
-        const token = process.env.TOKEN;
-        axios.get(api,
-            { headers: { "Authorization": `Bearer ${token}` } })
-            .then((res) => {
-                setProveedorFiltrados(res.data);
-            });
+        console.log(opcionSeleccionada)
+        if (opcionSeleccionada === 1) {
+
+            const proveedoresFiltrados = proveedores.filter(p => p.nombre.includes(n));
+            setProveedorFiltrados(proveedoresFiltrados);
+
+        }
+        else {
+            const proveedoresFiltrados = proveedores.filter(p => p.ruc.includes(n));
+            console.log(proveedoresFiltrados)
+            setProveedorFiltrados(proveedoresFiltrados);
+        }
         setTimeout(() => {
             setCargando(false);
         }, 300);
@@ -254,6 +269,16 @@ const Proveedor = ({ }) => {
 
             <div className="block">
                 <div className="px-5 flex justify-between gap-3">
+                    <Form.Select
+                        value={opcionSeleccionada}
+                        onChange={(e) => setOpcionSeleccionada(e.target.value)}
+                    >
+
+                        {opciones?.map((opcion) => (
+                            <option key={opcion.id} value={opcion.id}>{opcion.value}</option>
+                        ))}
+                    </Form.Select>
+
                     <Form.Control
                         className="w-1/6"
                         placeholder="Has tu busqueda"
@@ -265,7 +290,7 @@ const Proveedor = ({ }) => {
                         Buscar
                     </Button>
 
-                    <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Nuevo Proveedor</Button>
+                    <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Proveedor</Button>
 
                 </div>
 
