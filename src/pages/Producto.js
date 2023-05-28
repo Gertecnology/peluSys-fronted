@@ -11,19 +11,25 @@ import { useRouter } from 'next/router'
 const Producto = ({ }) => {
     const ruta = useRouter();
 
+    const form2 = useForm();
+
     const [showModal, setShowModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [showNuevaMarcaModal, setShowNuevaMarcaModal] = useState(false);
+    const [showNuevoProveedorModal, setShowNuevoProveedorModal] = useState(false);
     const [showDetalleModal, setShowDetalleModal] = useState(false);
     const [productoEditar, setProductoEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
     } = useForm();
+    const { register: registerForm2, handleSubmit: handleSubmitForm2, formState: { errors: errorform2 }, setValue: setValueForm2, reset: resetForm2, getValues: getValuesForm2,
+    } = form2;
     const [productos, setProductos] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState([]);
     const [marcaSeleccionada, setMarcaSeleccionada] = useState([]);
+    const [proveedorObjeto, setProveedorObjeto] = useState([]);
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -52,8 +58,9 @@ const Producto = ({ }) => {
         obtenerDatos();
         obtenerMarcas();
         obtenerProveedores();
-        console.log(marcas);
     }, [])
+
+
 
     useEffect(() => {
         actualizar();
@@ -102,9 +109,6 @@ const Producto = ({ }) => {
             })
             .catch((error) => {
                 console.log(error)
-            })
-            .finally(() => {
-                console.log(proveedores)
             })
 
     }
@@ -283,7 +287,6 @@ const Producto = ({ }) => {
 
     const marcaSubmit = () => {
         const token = process.env.TOKEN;
-        handleModal()
         const api = `${process.env.API_URL}/marca/guardar/`;
 
         axios.post(
@@ -305,6 +308,43 @@ const Producto = ({ }) => {
                 obtenerMarcas();
                 setShowModal(true);
                 setNombreMarca("");
+            })
+
+    }
+
+    const handleGuardarNuevoProveedor = () => {
+        console.log(proveedorObjeto)
+    }
+
+
+    // guardo un nuevo proveedor
+    const proveedorSubmit = () => {
+        const token = process.env.TOKEN;
+        const api = `${process.env.API_URL}/proveedores/guardar`;
+
+        axios.post(
+            api,
+            {
+                nombre: data.nombre,
+                ruc: data.ruc,
+                telefono: data.telefono,
+                direccion: data.direccion,
+                pais: data.pais,
+
+            },
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                toast.success('Proveedor Agregado con Exito');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar el Proveedor!"');
+                console.log(error);
+            })
+            .finally(() => {
+                obtenerProveedores();
+                resetForm2();
+                console.log(proveedores)
             })
 
     }
@@ -388,7 +428,7 @@ const Producto = ({ }) => {
                                         <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
                                     ))}
                                 </Form.Select>
-                                <Button variant="success">
+                                <Button variant="success" onClick={() => { setShowNuevoProveedorModal(true), setShowModal(false), setShowDetalleModal(false) }}>
                                     +
                                 </Button>
                             </div>
@@ -562,6 +602,8 @@ const Producto = ({ }) => {
                 </Modal.Footer>
             </Modal>
 
+
+
             <Modal show={showNuevaMarcaModal} onHide={() => { setShowNuevaMarcaModal(false) }}>
                 <Modal.Header closeButton>
                     <Modal.Title>Agregar Nueva Marca</Modal.Title>
@@ -579,9 +621,6 @@ const Producto = ({ }) => {
 
                         />
                     </Form.Group>
-
-
-
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => { setShowNuevaMarcaModal(false), setShowModal(true) }}>
@@ -591,6 +630,97 @@ const Producto = ({ }) => {
                         Guardar
                     </Button>
                 </Modal.Footer>
+            </Modal>
+
+
+
+
+
+            <Modal show={showNuevoProveedorModal} onHide={() => { setShowNuevoProveedorModal(false), setShowModal(true), reset() }}>
+                <Form
+                    onSubmit={handleSubmitForm2(proveedorSubmit)}
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+
+                        <Form.Group>
+                            <Form.Label>Nombre del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("nombre", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.nombre}
+                                type="text"
+                                placeholder="Ingrese el nombre de la Marca"
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Dirección del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("direccion", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.direccion}
+                                type="text"
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>RUC del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("ruc", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.ruc}
+                                type="number"
+                                placeholder="Ingrese RUC"
+
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Telefono del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("telefono", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.telefono}
+                                type="number"
+                                placeholder="Ingrese número telefono"
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>País del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("pais", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.pais}
+                                type="text"
+                                placeholder="Ingrese País del Proveedor"
+
+                            />
+                        </Form.Group>
+
+
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => { setShowNuevoProveedorModal(false), setShowModal(true) }}>
+                            Cerrar
+                        </Button>
+                        <Button variant="primary" type="submit">
+                            Guardar
+                        </Button>
+                    </Modal.Footer>
+                </Form>
             </Modal>
 
         </Layout >
