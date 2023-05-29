@@ -1,6 +1,6 @@
 import Head from "next/head"
-import Sidebar from "../components/Sidebar"
-import Header from "../components/Header"
+import Sidebar from "../components/Sidebar/Sidebar"
+import Header from "../components/Header/Header"
 import styles from "../styles/Layout.module.css"
 
 import { ToastContainer } from "react-toastify";
@@ -34,6 +34,8 @@ const Layout = ({ children, pagina }) => {
     } else {
       setMostrarContenido(true)
     }
+
+
   }, [user])
 
   if (!mostarContenido)
@@ -54,29 +56,18 @@ const Layout = ({ children, pagina }) => {
 
 
   return (
-    <>
-      <Head>
-        <title>CRUD - {pagina}</title>
-      </Head>
-      <div className={`md:flex`}>
-        <aside className="md:w-21/12 bg-blueEdition">
-          <Sidebar />
-        </aside>
+      <>
+          <Head>
+              <title>CRUD - {pagina}</title>
+          </Head>
+          <div>
 
-        <div className="md:w-10/12 bg-bgEdition ">
-          <div className="grid grid-flow-row-2">
-            <div className={`${styles.border}`} >
               <Header />
-            </div>
-            <main className="h-screen ">
-              {children}
-            </main>
+              <Sidebar>{children}</Sidebar>
           </div>
-        </div>
+          <ToastContainer />
+      </>
 
-      </div>
-      <ToastContainer />
-    </>
   )
 }
 
