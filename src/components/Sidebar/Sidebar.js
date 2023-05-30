@@ -1,7 +1,7 @@
 
-import {useRouter} from "next/router";
-import {useState} from "react";
-import { FcCalendar , FcShop} from "react-icons/fc";
+import { useRouter } from "next/router";
+import { useState } from "react";
+import { FcCalendar, FcShop } from "react-icons/fc";
 
 
 const Sidebar = ({ children }) => {
@@ -55,6 +55,22 @@ const Sidebar = ({ children }) => {
                                             className="text-gray-600 py-3 hover:text-gray-900"
                                         >
                                             Servicio
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/Marca")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Marca
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/Proveedor")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Proveedor
                                         </button>
                                     </li>
                                 </ul>

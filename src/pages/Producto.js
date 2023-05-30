@@ -10,6 +10,9 @@ import ProductoApi from "./api/ProductoApi";
 import ProveedorApi from "./api/ProveedorApi";
 import MarcaApi from "./api/MarcaApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
+import axios from "axios";
+import { toast } from "react-toastify";
+
 
 const PAGE_SIZE = 10;
 
@@ -162,11 +165,34 @@ const Producto = ({ }) => {
     }
 
 
-
     const formSubmit = (data) => {
-        const productoApi = new ProductoApi(user.token);
-        productoApi.saveProducto(data);
-        obtenerProductos();
+        handleModal()
+        const api = `${process.env.API_URL}api/producto/guardar`;
+
+        axios.post(
+            api,
+            {
+                nombre: data.nombre,
+                detalle: data.detalle,
+                precio: data.precio,
+                tipo_iva: data.iva,
+                id_marca: data.marca,
+                id_proveedor: data.proveedor,
+
+            },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                toast.success('Producto Agregado');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar el producto!"');
+                console.log(error);
+            })
+            .finally(() => {
+                obtenerProductos();
+            })
+
     }
 
 
@@ -188,11 +214,28 @@ const Producto = ({ }) => {
 
 
     const handleSetDelete = (id) => {
-        setShowDeleteModal(true)
+        setShowDeleteModal(true);
         setIdEliminar(id);
     }
 
+    const handleDelete = (id) => {
+        const api = `${process.env.API_URL}api/producto/eliminar/${id}`;
+        axios.delete(api,
+            { headers: { "Authorization": `Bearer ${user.token}` } })
+            .then(() => {
+                toast.info('Producto Eliminado');
+                obtenerProductos();
+            })
+            .catch(() => {
+                toast.error('No se pudo Eliminar!');
+            })
+            .finally(() => {
+                setShowDeleteModal(false)
+                setIdEliminar(-1)
+                setShowDetalleModal(false);
+            })
 
+    }
 
     const handleClose = () => setShowDetalleModal(false);
     const handleRowClick = (id) => {
@@ -501,7 +544,7 @@ const Producto = ({ }) => {
                 </Modal.Body>
 
                 <Modal.Footer>
-                    <       Button variant="secondary" onClick={() => {
+                    <Button variant="secondary" onClick={() => {
                         setShowDeleteModal(false)
                         setIdEliminar(-1)
                         setShowDetalleModal(false)
@@ -509,7 +552,9 @@ const Producto = ({ }) => {
                         Cancelar
                     </Button>
 
-                    <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
+                    <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)}>
+                        Eliminar
+                    </Button>
                 </Modal.Footer>
             </Modal>
 

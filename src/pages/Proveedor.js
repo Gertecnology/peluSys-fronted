@@ -9,15 +9,15 @@ import { IoMdAddCircleOutline } from "react-icons/io"
 import { toast } from "react-toastify";
 import { useRouter } from 'next/router'
 import { AuthContext } from "@/pages/contexts/AuthContext";
-import MarcaApi from "./api/MarcaApi";
+import ProveedorApi from "./api/ProveedorApi";
 
 const PAGE_SIZE = 10;
 
-const Marca = ({ }) => {
+const Proveedor = ({ }) => {
     const ruta = useRouter();
     const { user } = useContext(AuthContext);
 
-    const [marcas, setMarcas] = useState([]);
+    const [proveedores, setProveedores] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
@@ -27,14 +27,15 @@ const Marca = ({ }) => {
     const [cargando, setCargando] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
-    const [marcaEditar, setMarcaEditar] = useState(undefined);
+    const [proveedorEditar, setProveedorEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
     } = useForm();
-    const [marcasFiltradas, setMarcasFiltradas] = useState([]);
+    const [proveedoresFiltrados, setProveedoresFiltrados] = useState([]);
     const [valor, setValor] = useState("");
 
     useEffect(() => {
-        obtenerMarcas();
+        obtenerProveedores();
+        console.log(proveedores)
     }, [])
 
 
@@ -48,7 +49,7 @@ const Marca = ({ }) => {
     }, [valor])
 
 
-    const paginatedMarca = marcas.slice(
+    const paginatedProveedor = proveedores.slice(
         currentPage * PAGE_SIZE,
         (currentPage + 1) * PAGE_SIZE
     );
@@ -59,14 +60,14 @@ const Marca = ({ }) => {
         valor === "" ? setIsBuscar(false) : null;
     }
 
-    const obtenerMarcas = () => {
+    const obtenerProveedores = () => {
         if (user && user.token) {
-            const marcaApi = new MarcaApi(user.token);
+            const proveedorApi = new ProveedorApi(user.token);
 
-            marcaApi.getMarcasPage()
+            proveedorApi.getProveedorPage()
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
-                    setMarcas(datos.content);
+                    setProveedores(datos.content);
                     setTotalPages(datos.totalPages);
 
                 })
@@ -89,54 +90,58 @@ const Marca = ({ }) => {
 
     const formSubmit = (data) => {
         handleModal()
-        const api = `${process.env.API_URL}api/marca/guardar/`;
+        const api = `${process.env.API_URL}api/proveedores/guardar`;
         axios.post(
             api,
             data,
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
-            .then((response) => {
-                toast.success('Marca Agregada');
+            .then(() => {
+                toast.success('Proveedor Agregado');
             })
-            .catch((error) => {
+            .catch(() => {
                 toast.error('No se pudo agregar!"');
             })
             .finally(() => {
-                obtenerMarcas();
+                obtenerProveedores();
 
             })
 
     }
 
     const handleSetEditar = (id) => {
-        const marca = marcas.find(s => s.id === id);
-        setMarcaEditar(marca);
+        const proveedor = proveedores.find(s => s.id === id);
+        setProveedorEditar(proveedor);
         handleModal();
-        setValue("nombre", marca.nombre);
+        setValue("ruc", proveedor.ruc);
+        setValue("nombre", proveedor.nombre);
+        setValue("telefono", proveedor.telefono);
+        setValue("direccion", proveedor.direccion);
+        setValue("pais", proveedor.pais);
         setIsEditar(true);
-        Object.keys(getValues()).forEach(key => setValue(key, marca[key]));
+        Object.keys(getValues()).forEach(key => setValue(key, proveedor[key]));
 
     }
 
 
     const handleEditar = (data) => {
         handleModal();
-        const api = `${process.env.API_URL}api/marca/actualizar/${marcaEditar.id}`;
+        const api = `${process.env.API_URL}api/proveedores/actualizar/${proveedorEditar.id}`;
         axios.post(api, {
-            id: marcaEditar.id,
+            id: proveedorEditar.id,
             ...data
         },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then(() => {
-                toast.success('Marca Actualizado');
-                obtenerMarcas();
+                toast.success('Proveedor Actualizado');
+                obtenerProveedores();
             })
             .catch((error) => {
                 toast.error('No se pudo actualizar!"');
             })
             .finally(() => {
-                setMarcaEditar(undefined);
+                setProveedorEditar(undefined);
                 setIsEditar(false);
 
             })
@@ -149,12 +154,12 @@ const Marca = ({ }) => {
         setIdEliminar(id);
     }
     const handleDelete = (id) => {
-        const api = `${process.env.API_URL}api/marca/eliminar/${id}`;
+        const api = `${process.env.API_URL}api/proveedores/eliminar/${id}`;
         axios.delete(api,
             { headers: { "Authorization": `Bearer ${user.token}` } })
             .then(() => {
-                toast.info('Marca Eliminado');
-                obtenerMarcas();
+                toast.info('Proveedor Eliminado');
+                obtenerProveedores();
             })
             .catch(() => {
                 toast.error('No se pudo Eliminar!');
@@ -169,34 +174,86 @@ const Marca = ({ }) => {
     const handleFiltrar = (valor) => {
         setCargando(true);
         setIsBuscar(true);
-        const marcaFiltrada = marcas.filter(m => m.nombre.toLowerCase().includes(valor.toLowerCase()));
-        setMarcasFiltradas(marcaFiltrada)
+        const api = `${process.env.API_URL}api/proveedores/buscar?nombre=${valor}&ruc=${valor}`;
+        axios.get(api,
+            { headers: { "Authorization": `Bearer ${user.token}` } })
+            .then((res) => {
+                setProveedoresFiltrados(res.data)
+            });
         setTimeout(() => {
             setCargando(false);
         }, 300);
     }
 
     return (
-        <Layout pagina={"Marcas"} titulo={"CRUD Marcas"} ruta={ruta.pathname}>
+        <Layout pagina={"Proveedores"} titulo={"CRUD Proveedores"} ruta={ruta.pathname}>
 
             <Modal show={showModal} onHide={handleModal}>
                 <Form
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header closeButton>
-                        <Modal.Title>Agregar Nueva Marca</Modal.Title>
+                        <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 
                         <Form.Group>
-                            <Form.Label>Nombre de la Marca</Form.Label>
+                            <Form.Label>Ruc</Form.Label>
+                            <Form.Control
+                                {...register("ruc", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Ruc del Proveedor"
+                                isInvalid={errors.ruc}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Nombre</Form.Label>
                             <Form.Control
                                 {...register("nombre", {
                                     required: true
                                 })}
                                 type="text"
-                                placeholder="Nombre de la Marca"
+                                placeholder="Nombre del Proveedor"
                                 isInvalid={errors.nombre}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Telefono</Form.Label>
+                            <Form.Control
+                                {...register("telefono", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Télefono del Proveedor"
+                                isInvalid={errors.telefono}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Direccion</Form.Label>
+                            <Form.Control
+                                {...register("direccion", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Direccion del Proveedor"
+                                isInvalid={errors.direccion}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Pais</Form.Label>
+                            <Form.Control
+                                {...register("pais", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Pais del Proveedor"
+                                isInvalid={errors.pais}
                             />
                         </Form.Group>
 
@@ -261,22 +318,30 @@ const Marca = ({ }) => {
                             <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
                                 <thead className="bg-blue-800">
                                     <tr>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Ruc</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Telefono</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Direccion</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Pais</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {isBuscar ? (
-                                        marcasFiltradas?.map((marca, index) => (
+                                        proveedoresFiltrados?.map((proveedor, index) => (
                                             <tr key={index} className="hover:bg-gray-50">
-                                                <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{marca.nombre}</td>
+                                                <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{proveedor.ruc}</td>
+                                                <td>{proveedor.nombre}</td>
+                                                <td>{proveedor.telefono}</td>
+                                                <td>{proveedor.direccion}</td>
+                                                <td>{proveedor.pais}</td>
                                                 <td>
                                                     <div className="flex gap-2 ">
-                                                        <Button size="sm" variant="link" onClick={() => handleSetEditar(marca.id)}>
+                                                        <Button size="sm" variant="link" onClick={() => handleSetEditar(proveedor.id)}>
                                                             <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                                 onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                         </Button>
-                                                        <Button size="sm" variant="link" onClick={() => handleSetDelete(marca.id)}>
+                                                        <Button size="sm" variant="link" onClick={() => handleSetDelete(proveedor.id)}>
                                                             <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                                 onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                         </Button>
@@ -284,16 +349,20 @@ const Marca = ({ }) => {
                                                 </td>
                                             </tr>
                                         ))
-                                    ) : (paginatedMarca.map((marca, index) => (
+                                    ) : (paginatedProveedor.map((proveedor, index) => (
                                         <tr key={index} className="hover:bg-gray-50">
-                                            <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{marca.nombre}</td>
+                                            <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{proveedor.ruc}</td>
+                                            <td>{proveedor.nombre}</td>
+                                            <td>{proveedor.telefono}</td>
+                                            <td>{proveedor.direccion}</td>
+                                            <td>{proveedor.pais}</td>
                                             <td>
                                                 <div className="flex gap-2 ">
-                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(marca.id)}>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(proveedor.id)}>
                                                         <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
-                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(marca.id)}>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(proveedor.id)}>
                                                         <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
@@ -346,7 +415,7 @@ const Marca = ({ }) => {
                 </Modal.Header>
 
                 <Modal.Body>
-                    <p>¿Estás Seguro de que desea eliminar esta Marca?</p>
+                    <p>¿Esta Seguro de que desea eliminar este Proveedor?</p>
                 </Modal.Body>
 
                 <Modal.Footer>
@@ -360,9 +429,11 @@ const Marca = ({ }) => {
                     <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
                 </Modal.Footer>
             </Modal>
+
+
         </Layout >
     );
 }
 
 
-export default Marca;
+export default Proveedor;
