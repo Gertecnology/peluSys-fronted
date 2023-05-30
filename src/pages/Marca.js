@@ -184,7 +184,7 @@ const Marca = ({ }) => {
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header closeButton>
-                        <Modal.Title>Agregar Nueva Marca</Modal.Title>
+                        <Modal.Title> {isEditar ? "Editar Marca" : "Agregar Marca"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 

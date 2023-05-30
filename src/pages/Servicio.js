@@ -1,13 +1,15 @@
 import Layout from "@/layout/Layout";
-
-
+import { Modal, Button, Form } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
-
+import { useForm } from "react-hook-form";
 import { useRouter } from 'next/router'
-
-import ServicioServices from "@/pages/api/SericiosApi";
-
+import ServicioApi from "@/pages/api/ServiciosApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
+import axios from "axios";
+import { FiEdit2 } from "react-icons/fi";
+import { AiOutlineDelete } from "react-icons/ai";
+import { IoMdAddCircleOutline } from "react-icons/io"
+import { toast } from "react-toastify";
 
 
 const PAGE_SIZE = 10;
@@ -15,120 +17,327 @@ const PAGE_SIZE = 10;
 const Servicio = ({ }) => {
     const ruta = useRouter();
 
-    const [servicio, setServicio] = useState([]);
+    const [servicios, setServicios] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
-        if (user && user.token) {
-            const servicioServices = new ServicioServices(user.token);
-
-            servicioServices.getServicios()
-                .then((datos) => {
-                    // Realizar algo con los datos obtenidos
-                    console.log("Datos obtenidos:", datos);
-                    setServicio(datos.content);
-                    setTotalPages(datos.totalPages);
-                    console.log("Valor de servicio:", servicio);
-                })
-                .catch((error) => {
-                    // Manejar el error
-                    console.error("Error al obtener los datos:", error);
-                });
-        }
+        obtenerServicios();
+        console.log(servicios)
     }, [user]);
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
     };
 
-    const paginatedServicio = servicio.slice(
+    const paginatedServicio = servicios.slice(
         currentPage * PAGE_SIZE,
         (currentPage + 1) * PAGE_SIZE
     );
 
+    const [showModal, setShowModal] = useState(false);
+    const [isEditar, setIsEditar] = useState(false);
+    const [isBuscar, setIsBuscar] = useState(false);
+    const [cargando, setCargando] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [idEliminar, setIdEliminar] = useState(-1)
+    const [servicioEditar, setServicioEditar] = useState(undefined);
+    const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
+    } = useForm();
+    const [serviciosFiltrados, setServiciosFiltrados] = useState([]);
+    const [valor, setValor] = useState("");
+
+
+
+
+    useEffect(() => {
+        if (valor.length > 3) {
+            handleFiltrar(valor)
+        }
+        else {
+            actualizar();
+        }
+    }, [valor])
+
+    const obtenerServicios = () => {
+        if (user && user.token) {
+            const servicioServices = new ServicioApi(user.token);
+
+            servicioServices.getServicios()
+                .then((datos) => {
+                    // Realizar algo con los datos obtenidos
+                    setServicios(datos.content);
+                    setTotalPages(datos.totalPages);
+                })
+                .catch((error) => {
+                    // Manejar el error
+                    console.error("Error al obtener los datos:", error);
+                });
+        }
+    }
+
+    const actualizar = () => {
+        valor === "" ? setIsBuscar(false) : null;
+    }
+
+
+    const handleModal = () => {
+        setShowModal(!showModal);
+        reset();
+        setIsEditar(false);
+
+
+    };
+
+
+    const formSubmit = (data) => {
+        handleModal()
+        const api = `${process.env.API_URL}api/servicios/guardar`;
+        axios.post(
+            api,
+            data,
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                toast.success('Servicio Agregado');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar!"');
+            })
+            .finally(() => {
+                obtenerServicios();
+
+            })
+
+    }
+
+    const handleSetEditar = (id) => {
+        const servicio = servicios.find(s => s.id === id);
+        setServicioEditar(servicio);
+        handleModal();
+        setValue("detalle", servicio.detalle);
+        setValue("precio", servicio.precio);
+        setIsEditar(true);
+        Object.keys(getValues()).forEach(key => setValue(key, servicio[key]));
+
+    }
+
+
+    const handleEditar = (data) => {
+        handleModal();
+        const api = `${process.env.API_URL}api/servicios/actualizar/${servicioEditar.id}`;
+        axios.post(api, {
+            id: servicioEditar.id,
+            ...data
+        },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then(() => {
+                toast.success('Servicio Actualizado');
+                obtenerServicios();
+            })
+            .catch((error) => {
+                toast.error('No se pudo actualizar!"');
+            })
+            .finally(() => {
+                setServicioEditar(undefined);
+                setIsEditar(false);
+
+            })
+        handleModal();
+
+    }
+
+    const handleSetDelete = (id) => {
+        setShowDeleteModal(true)
+        setIdEliminar(id);
+    }
+    const handleDelete = (id) => {
+        const api = `${process.env.API_URL}api/servicios/eliminar/${id}`;
+        axios.delete(api,
+            { headers: { "Authorization": `Bearer ${user.token}` } })
+            .then(() => {
+                toast.info('Servicio Eliminado');
+            })
+            .catch(() => {
+                toast.error('No se pudo Eliminar!');
+            })
+            .finally(() => {
+                obtenerServicios();
+                setShowDeleteModal(false)
+                setIdEliminar(-1)
+            })
+
+    }
+
+    const handleFiltrar = (filtro) => {
+        setCargando(true);
+        setIsBuscar(true);
+        const servicioApi = new ServicioApi(user.token);
+        servicioApi.filterServicio(filtro)
+            .then((datos) => {
+                // Realizar algo con los datos obtenidos
+                setServiciosFiltrados(datos);
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al obtener los datos:", error);
+            });
+
+        setTimeout(() => {
+            setCargando(false);
+        }, 500);
+    }
+
+
     return (
-        <Layout pagina={"Servicio"} titulo={"CRUD Servicio"} ruta={ruta.pathname}>
-            <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
-                <div className="w-full overflow-x-auto">
-                    <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
-                        <thead className="bg-blue-800">
-                            <tr>
-                                <th scope="col" className="px-6 py-4 font-medium text-white">
-                                    Servicio
-                                </th>
-                                <th scope="col" className="px-6 py-4 font-medium text-white">
-                                    Precio
-                                </th>
-                                <th scope="col" className="px-6 py-4 font-medium text-white">
-                                    Acciones
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {paginatedServicio.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50">
-                                    <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">
-                                        <div className="text-sm">
-                                            <div className=" text-gray-700">
-                                                {item.detalle}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">{item.precio} gs</td>
-                                    <td className="px-6 py-4 flex items-center">
-                                        <div className="flex justify-end gap-4">
-                                            <a
-                                                x-data="{ tooltip: 'Delete' }"
-                                                href="#"
-                                                className="text-gray-500 hover:text-red-600"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    strokeWidth="1.5"
-                                                    stroke="currentColor"
-                                                    className="h-6 w-6"
-                                                    x-tooltip="tooltip"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                                                    />
-                                                </svg>
-                                            </a>
-                                            <a
-                                                x-data="{ tooltip: 'Edit' }"
-                                                href="#"
-                                                className="text-gray-500 hover:text-blue-600"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    strokeWidth="1.5"
-                                                    stroke="currentColor"
-                                                    className="h-6 w-6"
-                                                    x-tooltip="tooltip"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
-                                                    />
-                                                </svg>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+        <Layout pagina={"Servico"} titulo={"CRUD Servicio"} ruta={ruta.pathname}>
+
+            <Modal show={showModal} onHide={handleModal}>
+                <Form
+                    onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title> {isEditar ? "Editar Servicio" : "Agregar Servicio"}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+
+
+                        <Form.Group>
+                            <Form.Label>Nombre del Servicio</Form.Label>
+                            <Form.Control
+                                {...register("detalle", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Nombre del servicio"
+                                isInvalid={errors.detalle}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Precio del Servicio</Form.Label>
+                            <Form.Control
+                                {...register("precio", {
+                                    required: true
+                                })}
+                                type="number"
+                                placeholder="Precio del Servicio"
+                                isInvalid={errors.nombre}
+                            />
+                        </Form.Group>
+
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleModal}>
+                            Cerrar
+                        </Button>
+                        <Button variant="primary" type="submit">
+                            {isEditar ? "Terminar Edición" : "Guardar"}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
+
+
+            <div className="block">
+                <div className="flex items-center">
+                    <div className="px-5 w-3/4 flex items-center">
+                        <Form.Control
+                            placeholder="Has tu busqueda aquí"
+                            value={valor}
+                            onChange={e => setValor(e.target.value)}
+                        />
+                    </div>
+
+
+                    <div className="w-1/4 pl-40">
+                        <div className="flex justify-center mt-3">
+                            <button
+                                size="lg"
+                                onClick={() => handleModal()}>
+                                <div className="flex gap-1">
+                                    <p className="text-center hover:text-blueEdition hover:font-bold">
+                                        Agregar
+                                    </p>
+                                    <IoMdAddCircleOutline color="#808080" size="30px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
+
+                {cargando ? (<div class="sk-circle">
+                    <div class="sk-circle1 sk-child"></div>
+                    <div class="sk-circle2 sk-child"></div>
+                    <div class="sk-circle3 sk-child"></div>
+                    <div class="sk-circle4 sk-child"></div>
+                    <div class="sk-circle5 sk-child"></div>
+                    <div class="sk-circle6 sk-child"></div>
+                    <div class="sk-circle7 sk-child"></div>
+                    <div class="sk-circle8 sk-child"></div>
+                    <div class="sk-circle9 sk-child"></div>
+                    <div class="sk-circle10 sk-child"></div>
+                    <div class="sk-circle11 sk-child"></div>
+                    <div class="sk-circle12 sk-child"></div>
+                </div>) : (
+                    <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
+                                <thead className="bg-blue-800">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Precio</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {isBuscar ? (
+                                        serviciosFiltrados?.map((servicio, index) => (
+                                            <tr key={index} className="hover:bg-gray-50">
+                                                <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{servicio.detalle}</td>
+                                                <td >{servicio.precio}</td>
+                                                <td>
+                                                    <div className="flex gap-2 ">
+                                                        <Button size="sm" variant="link" onClick={() => handleSetEditar(servicio.id)}>
+                                                            <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                                onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                        </Button>
+                                                        <Button size="sm" variant="link" onClick={() => handleSetDelete(servicio.id)}>
+                                                            <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                                onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (paginatedServicio.map((servicio, index) => (
+                                        <tr key={index} className="hover:bg-gray-50">
+                                            <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{servicio.detalle}</td>
+                                            <td>{servicio.precio}</td>
+                                            <td>
+                                                <div className="flex gap-2 ">
+                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(servicio.id)}>
+                                                        <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                    </Button>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(servicio.id)}>
+                                                        <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
                 {/* Paginación */}
                 <div className="flex justify-center mt-5">
                     <nav className="inline-flex rounded-md shadow">
@@ -144,8 +353,8 @@ const Servicio = ({ }) => {
                                 key={index}
                                 onClick={() => handlePageChange(index)}
                                 className={`px-3 py-2 border-t border-b border-gray-300 bg-white text-sm font-medium ${currentPage === index
-                                        ? "text-blue-600 hover:text-blue-700"
-                                        : "text-gray-500 hover:bg-gray-50"
+                                    ? "text-blue-600 hover:text-blue-700"
+                                    : "text-gray-500 hover:bg-gray-50"
                                     }`}
                             >
                                 {index + 1}
@@ -160,9 +369,30 @@ const Servicio = ({ }) => {
                         </button>
                     </nav>
                 </div>
+
             </div>
 
-        </Layout>
+            <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false) }}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Eliminar Servicio</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body>
+                    <p>¿Estás Seguro de que desea eliminar este Servicio?</p>
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <       Button variant="secondary" onClick={() => {
+                        setShowDeleteModal(false)
+                        setIdEliminar(-1)
+                    }}>
+                        Cancelar
+                    </Button>
+
+                    <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
+                </Modal.Footer>
+            </Modal>
+        </Layout >
     );
 };
 

@@ -21,6 +21,7 @@ const Producto = ({ }) => {
 
     const { user } = useContext(AuthContext);
 
+    const form2 = useForm();
     const [productos, setProductos] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -29,11 +30,14 @@ const Producto = ({ }) => {
     const [valor, setValor] = useState("");
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
     } = useForm();
+    const { register: registerForm2, handleSubmit: handleSubmitForm2, formState: { errors: errorform2 }, setValue: setValueForm2, reset: resetForm2, getValues: getValuesForm2,
+    } = form2;
     const [showModal, setShowModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [showNuevaMarcaModal, setShowNuevaMarcaModal] = useState(false);
+    const [showNuevoProveedorModal, setShowNuevoProveedorModal] = useState(false);
     const [showDetalleModal, setShowDetalleModal] = useState(false);
     const [productoEditar, setProductoEditar] = useState(undefined);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
@@ -95,7 +99,6 @@ const Producto = ({ }) => {
     }
 
     const obtenerProveedores = () => {
-
         const proveedorApi = new ProveedorApi(user.token);
 
         proveedorApi.getProveedor()
@@ -118,7 +121,6 @@ const Producto = ({ }) => {
         marcaApi.getMarcas()
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                console.log("Datos obtenidos:", datos);
                 setMarcas(datos.content);
             })
             .catch((error) => {
@@ -136,7 +138,6 @@ const Producto = ({ }) => {
 
     const handleModal = () => {
         setShowModal(!showModal);
-        reset();
         setIsEditar(false);
 
 
@@ -150,9 +151,7 @@ const Producto = ({ }) => {
         productoApi.filterProducto(filtro)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                console.log("Datos obtenidos:", datos);
                 setProductosFiltrados(datos);
-                console.log("Valor de producto:", productosFiltrados);
             })
             .catch((error) => {
                 // Manejar el error
@@ -168,7 +167,7 @@ const Producto = ({ }) => {
     const formSubmit = (data) => {
         handleModal()
         const api = `${process.env.API_URL}api/producto/guardar`;
-
+        console.log(data);
         axios.post(
             api,
             {
@@ -187,27 +186,53 @@ const Producto = ({ }) => {
             })
             .catch((error) => {
                 toast.error('No se pudo agregar el producto!"');
-                console.log(error);
             })
             .finally(() => {
                 obtenerProductos();
+                reset();
             })
 
     }
 
 
     const handleSetEditar = (id) => {
+
         const producto = productos.find(p => p.id === id);
+        console.log(producto.id_marca)
         setMarcaSeleccionada(marcas.find(m => m.id === producto.id_marca));
         setProductoEditar(producto);
         handleModal();
-        setValue("nombre", producto.nombre);
-        setValue("proveedor", producto.id_proveedor);
-        setValue("detalle", producto.detalle);
-        setValue("precio", producto.precio);
-        setValue("marca", marcaSeleccionada);
         setIsEditar(true);
+        console.log(getValues())
         Object.keys(getValues()).forEach(key => setValue(key, producto[key]));
+        //setValue("marca", marcaSeleccionada.id);
+    }
+
+    const handleEditar = (data) => {
+        handleModal();
+        const api = `${process.env.API_URL}/productos/actulizar/${productoEditar.id}`;
+        axios.post(api, {
+            id: productoEditar.id,
+            ...data
+        },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                toast.success('Producto Actualizado');
+                obtenerProductos();
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error('No se pudo actualizar!"');
+            })
+            .finally(() => {
+                setProductoEditar(undefined);
+                setIsEditar(false);
+                setShowDetalleModal(false);
+                reset();
+
+            })
+        handleModal();
 
     }
 
@@ -245,13 +270,13 @@ const Producto = ({ }) => {
 
     }
 
-    const covnertidorMarca = (id) => {
+    const convertidorMarca = (id) => {
         const marca = marcas.find(m => m.id === id);
         return marca?.nombre
     }
 
     const convertidorProveedor = (id) => {
-        const proveedor = proveedores?.filter(p => p.id === id);
+        const proveedor = proveedores?.find(p => p.id === id);
         return proveedor?.nombre
     }
 
@@ -265,7 +290,61 @@ const Producto = ({ }) => {
         }
     }
 
+    const marcaSubmit = () => {
+        const api = `${process.env.API_URL}api/marca/guardar/`;
 
+        axios.post(
+            api,
+            {
+                nombre: nombreMarca,
+
+            },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                toast.success('Marca Agregada con Exito');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar la Marca!!');
+            })
+            .finally(() => {
+                obtenerMarcas();
+                setShowModal(true);
+                setNombreMarca("");
+            })
+
+    }
+
+    // guardo un nuevo proveedor
+    const proveedorSubmit = (data) => {
+        const api = `${process.env.API_URL}api/proveedores/guardar`;
+
+        axios.post(
+            api,
+            {
+                nombre: data.nombre,
+                ruc: data.ruc,
+                telefono: data.telefono,
+                direccion: data.direccion,
+                pais: data.pais,
+
+            },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                toast.success('Proveedor Agregado con Exito');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar el Proveedor!"');
+            })
+            .finally(() => {
+                obtenerProveedores();
+                resetForm2();
+                setShowNuevoProveedorModal(false);
+                setShowModal(true);
+            })
+
+    }
 
 
 
@@ -274,10 +353,10 @@ const Producto = ({ }) => {
 
             <Modal show={showModal} onHide={() => { handleModal(), setShowDetalleModal(false) }}>
                 <Form
-                    onSubmit={handleSubmit(formSubmit)}
+                    onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title>Agregar Producto</Modal.Title>
+                    <Modal.Header>
+                        <Modal.Title> {isEditar ? "Editar Producto" : "Agregar Producto"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 
@@ -300,7 +379,7 @@ const Producto = ({ }) => {
                                 <Form.Select {...register("marca", { required: true })}
 
                                 >
-                                    <option defaultValue="" disabled selected hidden>Seleccione una Marca</option>
+                                    <option value="" disabled hidden>Selecciona una opción</option>
                                     {marcas?.map((marca) => (
                                         <option key={marca.id} value={marca.id}>{marca.nombre}</option>
                                     ))}
@@ -313,7 +392,7 @@ const Producto = ({ }) => {
                         </Form.Group>
 
                         <Form.Group>
-                            <Form.Label>Detalle</Form.Label>
+                            <Form.Label>Descripción</Form.Label>
                             <Form.Control
 
                                 {...register("detalle", {
@@ -342,12 +421,12 @@ const Producto = ({ }) => {
                             <div className="flex gap-2">
                                 <Form.Select {...register("proveedor", { required: true })}
                                 >
-                                    <option value="" disabled selected hidden>Seleccione un Proveedor</option>
+                                    <option value="" disabled hidden>Seleccione un Proveedor</option>
                                     {proveedores?.map((proveedor) => (
                                         <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
                                     ))}
                                 </Form.Select>
-                                <Button variant="success">
+                                <Button variant="success" onClick={() => { setShowNuevoProveedorModal(true), setShowModal(false), setShowDetalleModal(false) }}>
                                     +
                                 </Button>
                             </div>
@@ -357,7 +436,7 @@ const Producto = ({ }) => {
                             <Form.Label>IVA</Form.Label>
                             <Form.Select {...register("iva", { required: true })}
                             >
-                                <option defaultValue="" disabled selected hidden>IVA</option>
+                                <option defaultValue="" disabled hidden>IVA</option>
 
                                 {iva?.map((iva) => (
                                     <option key={iva.id} value={iva.id}>{convertidorIva(iva.value)}</option>
@@ -368,7 +447,7 @@ const Producto = ({ }) => {
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={() => { handleModal(), setShowDetalleModal(false) }}>
+                        <Button variant="secondary" onClick={() => { handleModal(), setShowDetalleModal(false), reset() }}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">
@@ -443,9 +522,9 @@ const Producto = ({ }) => {
                                         productosFiltrados?.map((producto, index) => (
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
-                                                <td>{covnertidorMarca(producto.id_marca)}</td>
+                                                <td>{convertidorMarca(producto.id_marca)}</td>
                                                 <td>{producto.precio}</td>
-                                                <td>{convertidorIva(producto.tipo_iva)}</td>
+                                                <td>{convertidorIva(producto.tipo_iva)} %</td>
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
@@ -463,9 +542,9 @@ const Producto = ({ }) => {
                                     ) : (paginatedProducto.map((producto, index) => (
                                         <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
-                                            <td>{(producto.id_marca)}</td>
+                                            <td>{convertidorMarca(producto.id_marca)}</td>
                                             <td>{producto.precio}</td>
-                                            <td>{(producto.tipo_iva)}</td>
+                                            <td>{convertidorIva(producto.tipo_iva)} %</td>
                                             <td>
                                                 <div className="flex gap-2 ">
                                                     <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
@@ -526,8 +605,8 @@ const Producto = ({ }) => {
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p className="text-xl font-light">Detalle: <span className="text-2xl font-normal">{productoSeleccionado.detalle}</span></p>
-                    <p className="text-xl font-light">Proveedor: <span className="text-2xl font-normal">{(productoSeleccionado.id_proveedor)}</span></p>
+                    <p className="text-xl font-light">Descripción del Producto: <span className="text-2xl font-normal">{productoSeleccionado.detalle}</span></p>
+                    <p className="text-xl font-light">Proveedor: <span className="text-2xl font-normal">{convertidorProveedor(productoSeleccionado.id_proveedor)}</span></p>
 
                 </Modal.Body>
 
@@ -588,6 +667,97 @@ const Producto = ({ }) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+
+
+
+            <Modal show={showNuevoProveedorModal} onHide={() => { setShowNuevoProveedorModal(false), setShowModal(true), reset() }}>
+                <Form
+                    onSubmit={handleSubmitForm2(proveedorSubmit)}
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+
+                        <Form.Group>
+                            <Form.Label>Nombre del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("nombre", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.nombre}
+                                type="text"
+                                placeholder="Ingrese el nombre de la Marca"
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Dirección del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("direccion", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.direccion}
+                                type="text"
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>RUC del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("ruc", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.ruc}
+                                type="number"
+                                placeholder="Ingrese RUC"
+
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Telefono del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("telefono", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.telefono}
+                                type="number"
+                                placeholder="Ingrese número telefono"
+
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>País del Proveedor</Form.Label>
+                            <Form.Control
+                                {...registerForm2("pais", {
+                                    required: true
+                                })}
+                                isInvalid={errorform2.pais}
+                                type="text"
+                                placeholder="Ingrese País del Proveedor"
+
+                            />
+                        </Form.Group>
+
+
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => { setShowNuevoProveedorModal(false), setShowModal(true) }}>
+                            Cerrar
+                        </Button>
+                        <Button variant="primary" type="submit">
+                            Guardar
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
+
 
         </Layout >
     );

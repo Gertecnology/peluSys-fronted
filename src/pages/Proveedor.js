@@ -193,7 +193,7 @@ const Proveedor = ({ }) => {
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header closeButton>
-                        <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
+                        <Modal.Title> {isEditar ? "Editar Proveedor" : "Agregar Proveedor"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 
