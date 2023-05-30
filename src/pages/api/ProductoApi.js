@@ -45,8 +45,41 @@ class ProductoApi {
             throw error;
         }
     };
-}
 
+
+
+    saveProducto = async (data) => {
+        console.log(data);
+        try {
+            const api = `${process.env.API_URL}api/producto/guardar`;
+            const response = await axios.post(api, {
+                nombre: data.nombre,
+                detalle: data.detalle,
+                precio: data.precio,
+                tipo_iva: data.iva,
+                id_marca: data.marca,
+                id_proveedor: data.proveedor,
+            },
+                {
+                    headers: { Authorization: `Bearer ${this.token}` },
+                });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error("Error al guardar el producto");
+            }
+        } catch (error) {
+            console.error("Error en la solicitud HTTP:", error);
+            throw error;
+        }
+    };
+
+
+
+
+
+}
 
 
 

@@ -3,24 +3,26 @@ import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useEffect, useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { IoMdAddCircleOutline } from "react-icons/io"
-import { AiOutlineSearch } from "react-icons/ai"
 import { FiEdit2 } from "react-icons/fi";
 import { AiOutlineDelete } from "react-icons/ai";
 import { useRouter } from 'next/router'
 import ProductoApi from "./api/ProductoApi";
+import ProveedorApi from "./api/ProveedorApi";
+import MarcaApi from "./api/MarcaApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
-import { convertidorIva } from "@/helpers";
 
 const PAGE_SIZE = 10;
 
 const Producto = ({ }) => {
     const ruta = useRouter();
+
     const { user } = useContext(AuthContext);
 
     const [productos, setProductos] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [proveedores, setProveedores] = useState([]);
+    const [marcas, setMarcas] = useState([]);
     const [valor, setValor] = useState("");
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues, control,
     } = useForm();
@@ -41,40 +43,18 @@ const Producto = ({ }) => {
         ]
     )
 
-
-    const [opciones, setOpciones] = useState(
-        [
-            { id: 1, value: "Nombre" },
-            { id: 2, value: "Marca" }
-        ]
-    )
-
-    const [opcionSeleccionada, setOpcionSeleccionada] = useState("")
-    const [marcas, setMarcas] = useState([]);
     const [nombreMarca, setNombreMarca] = useState("");
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
 
 
-
+    useEffect(() => {
+        obtenerProveedores();
+        obtenerMarcas();
+    }, [])
 
     useEffect(() => {
-        if (user && user.token) {
-            const productoApi = new ProductoApi(user.token);
-
-            productoApi.getProducto()
-                .then((datos) => {
-                    // Realizar algo con los datos obtenidos
-                    console.log("Datos obtenidos:", datos);
-                    setProductos(datos.content);
-                    setTotalPages(datos.totalPages);
-                    console.log("Valor de producto:", productos);
-                })
-                .catch((error) => {
-                    // Manejar el error
-                    console.error("Error al obtener los datos:", error);
-                });
-        }
+        obtenerProductos();
     }, [user]);
 
 
@@ -87,13 +67,63 @@ const Producto = ({ }) => {
         }
     }, [valor])
 
+
     const paginatedProducto = productos.slice(
         currentPage * PAGE_SIZE,
         (currentPage + 1) * PAGE_SIZE
     );
 
+    const obtenerProductos = () => {
+        if (user && user.token) {
+            const productoApi = new ProductoApi(user.token);
+
+            productoApi.getProducto()
+                .then((datos) => {
+                    // Realizar algo con los datos obtenidos
+                    setProductos(datos.content);
+                    setTotalPages(datos.totalPages);
+
+                })
+                .catch((error) => {
+                    // Manejar el error
+                    console.error("Error al obtener los datos:", error);
+                });
+        }
+    }
+
+    const obtenerProveedores = () => {
+
+        const proveedorApi = new ProveedorApi(user.token);
+
+        proveedorApi.getProveedor()
+            .then((datos) => {
+                // Realizar algo con los datos obtenidos
+                setProveedores(datos);
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al obtener los datos:", error);
+            });
+
+    }
 
 
+    const obtenerMarcas = () => {
+
+        const marcaApi = new MarcaApi(user.token);
+
+        marcaApi.getMarcas()
+            .then((datos) => {
+                // Realizar algo con los datos obtenidos
+                console.log("Datos obtenidos:", datos);
+                setMarcas(datos.content);
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al obtener los datos:", error);
+            });
+
+    }
 
     const actualizar = () => {
         valor === "" ? setIsBuscar(false) : null;
@@ -133,8 +163,10 @@ const Producto = ({ }) => {
 
 
 
-    const formSubmit = () => {
-        alert("paso");
+    const formSubmit = (data) => {
+        const productoApi = new ProductoApi(user.token);
+        productoApi.saveProducto(data);
+        obtenerProductos();
     }
 
 
@@ -170,6 +202,29 @@ const Producto = ({ }) => {
 
     }
 
+    const covnertidorMarca = (id) => {
+        const marca = marcas.find(m => m.id === id);
+        return marca?.nombre
+    }
+
+    const convertidorProveedor = (id) => {
+        const proveedor = proveedores?.filter(p => p.id === id);
+        return proveedor?.nombre
+    }
+
+
+    const convertidorIva = (value) => {
+        if (value === 0.1 || value === 1) {
+            return 10;
+        }
+        else {
+            return 5;
+        }
+    }
+
+
+
+
 
     return (
         <Layout pagina={"Producto"} titulo={"CRUD Producto"} ruta={ruta.pathname}>
@@ -200,8 +255,7 @@ const Producto = ({ }) => {
 
                             <div className="flex gap-2">
                                 <Form.Select {...register("marca", { required: true })}
-                                    value={marcaSeleccionada}
-                                    onChange={(e) => setMarcaSeleccionada(e.target.value)}
+
                                 >
                                     <option defaultValue="" disabled selected hidden>Seleccione una Marca</option>
                                     {marcas?.map((marca) => (
@@ -262,8 +316,8 @@ const Producto = ({ }) => {
                             >
                                 <option defaultValue="" disabled selected hidden>IVA</option>
 
-                                {opciones?.map((iva) => (
-                                    <option key={iva.id} value={iva.id}>{iva.value}</option>
+                                {iva?.map((iva) => (
+                                    <option key={iva.id} value={iva.id}>{convertidorIva(iva.value)}</option>
                                 ))}
                             </Form.Select>
                         </Form.Group>
@@ -346,9 +400,9 @@ const Producto = ({ }) => {
                                         productosFiltrados?.map((producto, index) => (
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
-                                                <td>{producto.id_marca}</td>
+                                                <td>{covnertidorMarca(producto.id_marca)}</td>
                                                 <td>{producto.precio}</td>
-                                                <td>{(producto.tipo_iva)}</td>
+                                                <td>{convertidorIva(producto.tipo_iva)}</td>
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
