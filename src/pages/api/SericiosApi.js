@@ -8,7 +8,7 @@ class ServicioServices {
         this.token = token;
     }
 
-    getServicios = async (page, size , token) => {
+    getServicios = async (page, size) => {
         try {
             const api = `${process.env.API_URL}api/servicios/page`;
             const response = await axios.get(api, {
