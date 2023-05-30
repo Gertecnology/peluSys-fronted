@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import { FiEdit2 } from "react-icons/fi";
 import { AiOutlineDelete } from "react-icons/ai";
+import { IoMdAddCircleOutline } from "react-icons/io"
 import { toast } from "react-toastify";
 import { useRouter } from 'next/router'
 import { AuthContext } from "@/pages/contexts/AuthContext";
@@ -33,7 +34,6 @@ const Marca = ({ }) => {
 
     useEffect(() => {
         obtenerMarcas();
-        console.log(marcas)
     }, [])
 
 
@@ -58,12 +58,12 @@ const Marca = ({ }) => {
         valor === "" ? setIsBuscar(false) : null;
     }
 
-    const obtenerMarcas = async (page, size) => {
-        const api = `${process.env.API_URL}/marca/page`;
+    const obtenerMarcas = () => {
+        const api = `${process.env.API_URL}api/marca/`;
 
         axios.get(api,
             { headers: { "Authorization": `Bearer ${user.token}` } },
-            { params: { page, size } },
+
         )
             .then(res => {
                 setMarcas(res.data);
@@ -87,7 +87,7 @@ const Marca = ({ }) => {
 
     const formSubmit = (data) => {
         handleModal()
-        const api = `${process.env.API_URL}/marca/guardar/`;
+        const api = `${process.env.API_URL}api/marca/guardar/`;
         axios.post(
             api,
             data,
@@ -119,7 +119,7 @@ const Marca = ({ }) => {
 
     const handleEditar = (data) => {
         handleModal();
-        const api = `${process.env.API_URL}/marca/actualizar/${marcaEditar.id}`;
+        const api = `${process.env.API_URL}api/marca/actualizar/${marcaEditar.id}`;
         axios.post(api, {
             id: marcaEditar.id,
             ...data
@@ -147,7 +147,7 @@ const Marca = ({ }) => {
         setIdEliminar(id);
     }
     const handleDelete = (id) => {
-        const api = `${process.env.API_URL}/marca/eliminar/${id}`;
+        const api = `${process.env.API_URL}api/marca/eliminar/${id}`;
         axios.delete(api,
             { headers: { "Authorization": `Bearer ${user.token}` } })
             .then(() => {
@@ -164,11 +164,11 @@ const Marca = ({ }) => {
 
     }
 
-    const handleFiltrar = (n) => {
+    const handleFiltrar = (valor) => {
         setCargando(true);
         setIsBuscar(true);
-        const marcasFiltradas = marcas.filter(m => m.nombre.includes(n));
-        setMarcasFiltradas(marcasFiltradas)
+        const marcaFiltrada = marcas.filter(m => m.nombre.toLowerCase().includes(valor.toLowerCase()));
+        setMarcasFiltradas(marcaFiltrada)
         setTimeout(() => {
             setCargando(false);
         }, 300);
@@ -212,19 +212,31 @@ const Marca = ({ }) => {
 
 
             <div className="block">
-                <div className="px-5 flex justify-between gap-3">
-                    <Form.Control
-                        className="w-1/6"
-                        placeholder="Has tu busqueda"
-                        value={valor}
-                        onChange={e => setValor(e.target.value)}
-                    />
+                <div className="flex items-center">
+                    <div className="px-5 w-3/4 flex items-center">
+                        <Form.Control
+                            placeholder="Has tu busqueda aquí"
+                            value={valor}
+                            onChange={e => setValor(e.target.value)}
+                        />
+                    </div>
 
-                    <Button variant="secondary" onClick={() => handleFiltrar(valor)}>
-                        Buscar
-                    </Button>
 
-                    <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Nueva Marca</Button>
+                    <div className="w-1/4 pl-40">
+                        <div className="flex justify-center mt-3">
+                            <button
+                                size="lg"
+                                onClick={() => handleModal()}>
+                                <div className="flex gap-1">
+                                    <p className="text-center hover:text-blueEdition hover:font-bold">
+                                        Agregar
+                                    </p>
+                                    <IoMdAddCircleOutline color="#808080" size="30px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                </div>
+                            </button>
+                        </div>
+                    </div>
 
                 </div>
 
@@ -248,19 +260,14 @@ const Marca = ({ }) => {
                                 <thead className="bg-blue-800">
                                     <tr>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Marca</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Precio</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">IVA</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {isBuscar ? (
                                         marcasFiltradas?.map((marca, index) => (
-                                            <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(marca.id)}>
+                                            <tr key={index} className="hover:bg-gray-50">
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{marca.nombre}</td>
-                                                <td>{marca.nombre}</td>
-
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(marca.id)}>
@@ -275,19 +282,16 @@ const Marca = ({ }) => {
                                                 </td>
                                             </tr>
                                         ))
-                                    ) : (paginatedMarca.map((producto, index) => (
-                                        <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
-                                            <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
-                                            <td>{(producto.id_marca)}</td>
-                                            <td>{producto.precio}</td>
-                                            <td>{(producto.tipo_iva)}</td>
+                                    ) : (marcas.map((marca, index) => (
+                                        <tr key={index} className="hover:bg-gray-50">
+                                            <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{marca.nombre}</td>
                                             <td>
                                                 <div className="flex gap-2 ">
-                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(marca.id)}>
                                                         <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
-                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(producto.id)}>
+                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(marca.id)}>
                                                         <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                             onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                     </Button>
