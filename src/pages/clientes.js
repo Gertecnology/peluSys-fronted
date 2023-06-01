@@ -31,7 +31,7 @@ const Cliente = ({ }) => {
     const obtenerDatos = () => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/`;
-        const token = user.accessToken;
+        const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setClientes(res.data);
@@ -45,7 +45,7 @@ const Cliente = ({ }) => {
     const buscarDatos = (data) => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/buscar/${data.nombre}&${data.ruc}`;
-        const token = user.accessToken;
+        const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setClientes(res.data);
@@ -66,7 +66,7 @@ const Cliente = ({ }) => {
     const formSubmit = (data) => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/guardar/`;
-        const token = user.accessToken
+        const token = user.token
         handleModal()
         Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
 
