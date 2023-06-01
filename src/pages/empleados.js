@@ -19,6 +19,7 @@ import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css';
 
 import 'filepond/dist/filepond.min.css';
+import { IoMdAddCircleOutline, IoMdSearch } from "react-icons/io";
 
 // Registra los plugins necesarios
 registerPlugin(FilePondPluginImagePreview);
@@ -528,7 +529,7 @@ const Empleados = ({ }) => {
 
 
             <div className="block">
-                <div className="px-5 flex justify-between gap-1">
+                <div className="px-5 flex justify-between gap-1 w-10/12">
 
                     <Form.Control
                         className="w-1/6"
@@ -544,10 +545,24 @@ const Empleados = ({ }) => {
                     />
 
                     <Button variant="secondary">
-                        Buscar
+                       <IoMdSearch /> 
                     </Button>
 
-                    <Button variant="primary" size="sm" className="w-4/6" onClick={() => handleModal()}>Agregar Empleado</Button>
+                    <div className="pl-40 w-2/12">
+                    <div className="flex justify-center mt-3">
+                        <button size="lg" onClick={() => handleModal()}>
+                            <div className="flex gap-1">
+                                <p className="text-center hover:text-blueEdition hover:font-bold">Agregar</p>
+                                <IoMdAddCircleOutline
+                                    color="#808080"
+                                    size="30px"
+                                    onMouseOver={({ target }) => (target.style.color = "blue")}
+                                    onMouseOut={({ target }) => (target.style.color = "#808080")}
+                                />
+                            </div>
+                        </button>
+                    </div>
+                </div>
 
                 </div>
 
