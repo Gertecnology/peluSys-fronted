@@ -23,7 +23,7 @@ const Login = () => {
             return
         }
         await setUser(respuesta);
-        router.push("/")
+        router.push("/citas")
         return
     }
 
@@ -65,15 +65,15 @@ const Login = () => {
 
                         <Form.Group className="mb-3">
                             <Form.Label>
-                                Username
+                                Correo Electronico
                             </Form.Label>
                             <Form.Control
-                                {...register("username", {
+                                {...register("email", {
                                     required: true
                                 })}
 
-                                isInvalid={errors.username}
-                                placeholder="Ingrese su Usuario"
+                                isInvalid={errors.email}
+                                placeholder="Ingrese su correo electronico"
                             />
                         </Form.Group>
 
