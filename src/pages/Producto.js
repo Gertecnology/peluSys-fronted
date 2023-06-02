@@ -55,13 +55,13 @@ const Producto = ({ }) => {
     const [idEliminar, setIdEliminar] = useState(-1)
 
 
-    useEffect(() => {
-        obtenerProveedores();
-        obtenerMarcas();
-    }, [])
+
 
     useEffect(() => {
         obtenerProductos();
+        obtenerProveedores();
+        obtenerMarcas();
+        console.log(marcas)
     }, [user]);
 
 
@@ -93,7 +93,7 @@ const Producto = ({ }) => {
                 })
                 .catch((error) => {
                     // Manejar el error
-                    console.error("Error al obtener los datos:", error);
+                    console.error("Error al obtener los productos:", error);
                 });
         }
     }
@@ -108,7 +108,7 @@ const Producto = ({ }) => {
             })
             .catch((error) => {
                 // Manejar el error
-                console.error("Error al obtener los datos:", error);
+                console.error("Error al obtener los proveedores:", error);
             });
 
     }
@@ -121,11 +121,11 @@ const Producto = ({ }) => {
         marcaApi.getMarcas()
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                setMarcas(datos.content);
+                setMarcas(datos);
             })
             .catch((error) => {
                 // Manejar el error
-                console.error("Error al obtener los datos:", error);
+                console.error("Error al obtener las marcas:", error);
             });
 
     }
@@ -174,6 +174,7 @@ const Producto = ({ }) => {
                 nombre: data.nombre,
                 detalle: data.detalle,
                 precio: data.precio,
+                cantidad: data.cantidad,
                 tipo_iva: data.iva,
                 id_marca: data.marca,
                 id_proveedor: data.proveedor,
@@ -199,7 +200,7 @@ const Producto = ({ }) => {
 
         const producto = productos.find(p => p.id === id);
         console.log(producto.id_marca)
-        setMarcaSeleccionada(marcas.find(m => m.id === producto.id_marca));
+        setMarcaSeleccionada(marcas?.find(m => m.id === producto.id_marca));
         setProductoEditar(producto);
         handleModal();
         setIsEditar(true);
@@ -271,7 +272,7 @@ const Producto = ({ }) => {
     }
 
     const convertidorMarca = (id) => {
-        const marca = marcas.find(m => m.id === id);
+        const marca = marcas?.find(m => m.id === id);
         return marca?.nombre
     }
 
@@ -379,7 +380,7 @@ const Producto = ({ }) => {
                                 <Form.Select {...register("marca", { required: true })}
 
                                 >
-                                    <option value="" disabled hidden>Selecciona una opción</option>
+                                    <option defaultValue="" disabled hidden>Selecciona una opción</option>
                                     {marcas?.map((marca) => (
                                         <option key={marca.id} value={marca.id}>{marca.nombre}</option>
                                     ))}
@@ -402,6 +403,19 @@ const Producto = ({ }) => {
                                 type="text"
                                 placeholder="Descripción del producto"
                                 isInvalid={errors.detalle}
+                            />
+                        </Form.Group>
+
+
+                        <Form.Group>
+                            <Form.Label>Cantidad</Form.Label>
+                            <Form.Control
+                                {...register("cantidad", {
+                                    required: true
+                                })}
+                                type="number"
+                                placeholder="Cantidad del producto"
+                                isInvalid={errors.cantidad}
                             />
                         </Form.Group>
 
@@ -439,7 +453,7 @@ const Producto = ({ }) => {
                                 <option defaultValue="" disabled hidden>IVA</option>
 
                                 {iva?.map((iva) => (
-                                    <option key={iva.id} value={iva.id}>{convertidorIva(iva.value)}</option>
+                                    <option key={iva.id} value={iva.value}>{convertidorIva(iva.value)}</option>
                                 ))}
                             </Form.Select>
                         </Form.Group>
@@ -514,6 +528,7 @@ const Producto = ({ }) => {
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Marca</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Precio</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">IVA</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Cantidad</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                                     </tr>
                                 </thead>
@@ -525,6 +540,7 @@ const Producto = ({ }) => {
                                                 <td>{convertidorMarca(producto.id_marca)}</td>
                                                 <td>{producto.precio}</td>
                                                 <td>{convertidorIva(producto.tipo_iva)} %</td>
+                                                <td>{convertidorIva(producto.cantidad)}</td>
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
@@ -545,6 +561,7 @@ const Producto = ({ }) => {
                                             <td>{convertidorMarca(producto.id_marca)}</td>
                                             <td>{producto.precio}</td>
                                             <td>{convertidorIva(producto.tipo_iva)} %</td>
+                                            <td>{convertidorIva(producto.cantidad)}</td>
                                             <td>
                                                 <div className="flex gap-2 ">
                                                     <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>

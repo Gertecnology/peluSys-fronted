@@ -1,34 +1,14 @@
 import axios from "axios";
 import process from "next/dist/build/webpack/loaders/resolve-url-loader/lib/postcss";
 
-
-class MarcaApi {
+class FacturasApi {
     constructor(token) {
         this.token = token;
     }
 
-    getMarcas = async () => {
+    getFacturas = async (page, size) => {
         try {
-            const api = `${process.env.API_URL}api/marca/`;
-            const response = await axios.get(api, {
-                headers: { Authorization: `Bearer ${this.token}` },
-            });
-
-            if (response.status === 200) {
-                return response.data;
-            } else {
-                throw new Error("Error al obtener las marcas");
-            }
-        } catch (error) {
-            console.error("Error en la solicitud HTTP:", error);
-            throw error;
-        }
-    };
-
-
-    getMarcasPage = async (page, size) => {
-        try {
-            const api = `${process.env.API_URL}api/marca/page`;
+            const api = `${process.env.API_URL}api/factura/page`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
                 params: { page, size },
@@ -37,7 +17,25 @@ class MarcaApi {
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error("Error al obtener las marcas");
+                throw new Error("Error al obtener las facturas");
+            }
+        } catch (error) {
+            console.error("Error en la solicitud HTTP:", error);
+            throw error;
+        }
+    };
+
+    filterFacturas = async (filter) => {
+        try {
+            const api = `${process.env.API_URL}api/factura/buscar?pagado={filter}`;
+            const response = await axios.get(api, {
+                headers: { Authorization: `Bearer ${this.token}` },
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error("Error al filtrar las facturas");
             }
         } catch (error) {
             console.error("Error en la solicitud HTTP:", error);
@@ -47,4 +45,4 @@ class MarcaApi {
 
 }
 
-export default MarcaApi;
+export default FacturasApi;

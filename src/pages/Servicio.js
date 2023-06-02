@@ -193,7 +193,7 @@ const Servicio = ({ }) => {
 
 
     return (
-        <Layout pagina={"Servico"} titulo={"CRUD Servicio"} ruta={ruta.pathname}>
+        <Layout pagina={"Servicio"} titulo={"CRUD Servicio"} ruta={ruta.pathname}>
 
             <Modal show={showModal} onHide={handleModal}>
                 <Form
