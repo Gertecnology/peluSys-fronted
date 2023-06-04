@@ -21,6 +21,7 @@ const CompraProductos = ({ }) => {
     const ruta = useRouter();
 
     const [facturas, setFacturas] = useState([]);
+    const [facturasMostrar, setFacturasMostrar] = useState([]);
     const [clientes, setClientes] = useState([]);
     const [productos, setProductos] = useState([]);
     const [servicios, setServicios] = useState([]);
@@ -43,7 +44,7 @@ const CompraProductos = ({ }) => {
         setCurrentPage(page);
     };
 
-    const paginatedFactura = facturas.slice(
+    const paginatedFactura = facturasMostrar?.slice(
         currentPage * PAGE_SIZE,
         (currentPage + 1) * PAGE_SIZE
     );
@@ -61,16 +62,25 @@ const CompraProductos = ({ }) => {
     const [servicioEditar, setServicioEditar] = useState(undefined);
     const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
     } = useForm();
-    const [facturasFiltradas, setServiciosFiltrados] = useState([]);
+    const [facturasFiltradas, setFacturasFiltradas] = useState([]);
     const [facturaSeleccionada, setFacturaSeleccionada] = useState([]);
     const [facturaSeleccionadaDetalle, setFacturaSeleccionadaDetalle] = useState([]);
     const [valor, setValor] = useState("");
+    const [valorFiltro, setValorFiltro] = useState("");
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
             { id: 2, value: 0.05 }
         ]
     )
+
+    const [opciones, setOpcion] = useState(
+        [
+            { id: 1, value: "PAGADO" },
+            { id: 2, value: "PENDIENTE" },
+        ]
+    )
+
 
     const [estado, setEstado] = useState(
         [
@@ -81,9 +91,15 @@ const CompraProductos = ({ }) => {
 
 
 
+
+    useEffect(() => {
+        handleFiltrar(valorFiltro)
+
+    }, [valorFiltro])
+
     useEffect(() => {
         if (valor.length > 3) {
-            handleFiltrar(valor)
+            handleFiltrarInput(valor)
         }
         else {
             actualizar();
@@ -99,12 +115,13 @@ const CompraProductos = ({ }) => {
                     // Realizar algo con los datos obtenidos
                     setFacturas(datos?.content);
                     setTotalPages(datos?.totalPages);
-                    console.log(facturas);
+                    const filtrado = facturas?.filter(factura => factura.pagado === "PAGADO");
+                    setFacturasMostrar(filtrado);
                 })
                 .catch((error) => {
                     // Manejar el error
                     console.error("Error al obtener las Facturas:", error);
-                });
+                })
         }
     }
 
@@ -170,13 +187,15 @@ const CompraProductos = ({ }) => {
 
     };
 
-    const handleSubMenuServicioClick = () => {
+    const handleSubMenuServicioClick = (event) => {
+        event.preventDefault();
         setIsSubMenuServicioOpen(!isSubMenuServicioOpen);
         setIsSubMenuProductoOpen(false);
 
     };
 
-    const handleSubMenuProductoClick = () => {
+    const handleSubMenuProductoClick = (event) => {
+        event.preventDefault();
         setIsSubMenuProductoOpen(!isSubMenuProductoOpen);
         setIsSubMenuServicioOpen(false);
     };
@@ -184,28 +203,72 @@ const CompraProductos = ({ }) => {
 
 
     const formSubmit = (data) => {
+        console.log(data)
         handleModal();
-        const api = `${process.env.API_URL}api/servicios/guardar`;
-        axios.post(
-            api,
-            {
-                detalle: data.detalle,
-                precio: data.precio,
-                porcentajeIva: Number(data.porcentajeIva)
-            },
-            { headers: { "Authorization": `Bearer ${user.token}` } }
-        )
-            .then((response) => {
-                toast.success('Servicio Agregado');
-            })
-            .catch((error) => {
-                toast.error('No se pudo agregar!"');
-            })
-            .finally(() => {
-                obtenerFacturas();
-                reset();
+        reset();
+        const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
+        if (isSubMenuProductoOpen) {
+            axios.post(
+                api,
+                {
+                    proveedorId: Number(data.proveedorId),
+                    numeroFactura: data.factura,
+                    pagado: data.estado,
+                    detalles: [
+                        {
+                            cantidad: Number(data.cantidad),
+                            producto_id: Number(data.producto_id),
+                            servicio_id: 0,
+                        }
+                    ]
+                },
+                { headers: { "Authorization": `Bearer ${user.token}` } }
+            )
+                .then((response) => {
+                    toast.success('Factura Agregada');
+                })
+                .catch((error) => {
+                    toast.error('No se pudo agregar!"');
+                    console.log(error)
 
-            })
+                })
+                .finally(() => {
+                    obtenerFacturas();
+
+
+                })
+        }
+        else {
+            axios.post(
+                api,
+                {
+                    proveedorId: Number(data.proveedorId),
+                    numeroFactura: data.factura,
+                    pagado: data.estado,
+                    detalles: [
+                        {
+                            cantidad: Number(data.cantidad),
+                            producto_id: 0,
+                            servicio_id: Number(data.servicio_id),
+                        }
+                    ]
+                },
+                { headers: { "Authorization": `Bearer ${user.token}` } }
+            )
+                .then((response) => {
+                    toast.success('Factura Agregada');
+                })
+                .catch((error) => {
+                    toast.error('No se pudo agregar!"');
+                    reset();
+
+                })
+                .finally(() => {
+                    obtenerFacturas();
+
+                })
+        }
+
 
     }
 
@@ -247,45 +310,35 @@ const CompraProductos = ({ }) => {
 
     }
 
-    const handleSetDelete = (id) => {
-        setShowDeleteModal(true)
-        setIdEliminar(id);
-    }
-    const handleDelete = (id) => {
-        const api = `${process.env.API_URL}api/servicios/eliminar/${id}`;
-        axios.delete(api,
-            { headers: { "Authorization": `Bearer ${user.token}` } })
-            .then(() => {
-                toast.info('Servicio Eliminado');
-            })
-            .catch(() => {
-                toast.error('No se pudo Eliminar!');
-            })
-            .finally(() => {
-                obtenerFacturas();
-                setShowDeleteModal(false)
-                setIdEliminar(-1)
-            })
 
-    }
+    const handleSelectChange = (e) => {
+        setValorFiltro(e.target.value);
+        // Realiza alguna acción con el valor seleccionado
+        console.log("Valor seleccionado:", e.target.value);
+    };
 
-    const handleFiltrar = (filtro) => {
+    const handleFiltrar = (estado) => {
         setCargando(true);
         setIsBuscar(true);
-        const servicioApi = new FacturasApi(user.token);
-        servicioApi.filterServicio(filtro)
+        const facturaApi = new FacturasApi(user.token);
+        facturaApi.filterFacturasCompra(estado)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                setServiciosFiltrados(datos);
+                setFacturasFiltradas(datos);
             })
             .catch((error) => {
                 // Manejar el error
                 console.error("Error al obtener los datos:", error);
-            });
+            })
 
         setTimeout(() => {
             setCargando(false);
         }, 500);
+    }
+
+    const handleFiltrarInput = (filtro) => {
+        const filtrado = facturasFiltradas.filter(factura => factura.numero_factura.includes(filtro))
+        setFacturasFiltradas(filtrado);
     }
 
     const convertidorProveedor = (id) => {
@@ -323,7 +376,7 @@ const CompraProductos = ({ }) => {
                 <Form
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
-                    <Modal.Header closeButton>
+                    <Modal.Header>
                         <Modal.Title> {isEditar ? "Editar Factura" : "Cargar Factura"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
@@ -358,9 +411,9 @@ const CompraProductos = ({ }) => {
 
                         <Form.Group>
                             <Form.Label>Estado de la Factura </Form.Label>
-                            <Form.Select {...register("producto_id", { required: true })}
+                            <Form.Select {...register("estado", { required: true })}
                             >
-                                <option defaultValue="" disabled selected hidden>Seleccione un Estado</option>
+                                <option disabled selected hidden>Seleccione un Estado</option>
 
                                 {estado?.map((estado) => (
                                     <option key={estado.id} value={estado.value}>{estado.value}</option>
@@ -384,9 +437,9 @@ const CompraProductos = ({ }) => {
                                             <li>
 
                                                 <Form.Group>
-                                                    <Form.Select {...register("servicioId", { required: true })}
+                                                    <Form.Select {...register("servicioId")}
                                                     >
-                                                        <option defaultValue="" disabled selected hidden>Seleccione un Servicio</option>
+                                                        <option disabled selected hidden>Seleccione un Servicio</option>
 
                                                         {servicios?.map((servicio) => (
                                                             <option key={servicio.id} value={servicio.id}>{servicio.detalle}</option>
@@ -414,9 +467,9 @@ const CompraProductos = ({ }) => {
                                             <li>
 
                                                 <Form.Group>
-                                                    <Form.Select {...register("productoId", { required: true })}
+                                                    <Form.Select {...register("productoId")}
                                                     >
-                                                        <option defaultValue="" disabled selected hidden>Seleccione un Producto</option>
+                                                        <option disabled selected hidden>Seleccione un Producto</option>
 
                                                         {productos?.map((producto) => (
                                                             <option key={producto.id} value={producto.id}>{producto.nombre}</option>
@@ -431,9 +484,7 @@ const CompraProductos = ({ }) => {
                                                 <Form.Group>
                                                     <Form.Label>Cantidad a Comprar</Form.Label>
                                                     <Form.Control
-                                                        {...register("cantidad", {
-                                                            required: true
-                                                        })}
+                                                        {...register("cantidad")}
                                                         type="text"
                                                         placeholder="Cantidad del Producto"
                                                         isInvalid={errors.cantidad}
@@ -466,11 +517,23 @@ const CompraProductos = ({ }) => {
             <div className="block">
                 <div className="flex items-center">
                     <div className="px-5 w-3/4 flex items-center">
-                        <Form.Control
-                            placeholder="Has tu busqueda aquí"
-                            value={valor}
-                            onChange={e => setValor(e.target.value)}
-                        />
+                        <div className="w-1/4">
+                            <Form.Group>
+                                <Form.Select value={valorFiltro} onChange={handleSelectChange}>
+                                    <option disabled selected hidden>Filtro</option>
+                                    {opciones?.map((opcion) => (
+                                        <option key={opcion.id} value={opcion.value}>{opcion.value}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </div>
+                        <div className="w-3/4">
+                            <Form.Control
+                                placeholder="Has tu busqueda aquí"
+                                value={valor}
+                                onChange={e => setValor(e.target.value)}
+                            />
+                        </div>
                     </div>
 
 
@@ -514,6 +577,7 @@ const CompraProductos = ({ }) => {
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Nro. Factura</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Proveedor</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Fecha</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Estado</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Precio Total</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Iva 5%</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Iva 10%</th>
@@ -527,6 +591,7 @@ const CompraProductos = ({ }) => {
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                                 <td>{convertidorProveedor(factura.proveedor_id)}</td>
                                                 <td >{(factura.fecha)}</td>
+                                                <td >{(factura.pagado)}</td>
                                                 <td >{(factura.precio_total)}</td>
                                                 <td >{(factura.iva_total5)} %</td>
                                                 <td >{(factura.iva_total10)}</td>
@@ -535,10 +600,6 @@ const CompraProductos = ({ }) => {
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(factura.id)}>
                                                             <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
-                                                                onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                                        </Button>
-                                                        <Button size="sm" variant="link" onClick={() => handleSetDelete(factura.id)}>
-                                                            <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                                 onMouseOut={({ target }) => target.style.color = "#808080"} />
                                                         </Button>
                                                     </div>
@@ -550,21 +611,16 @@ const CompraProductos = ({ }) => {
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                             <td>{convertidorProveedor(factura.proveedor_id)}</td>
                                             <td >{(factura.fecha)}</td>
+                                            <td >{(factura.pagado)}</td>
                                             <td >{(factura.precio_total)}</td>
                                             <td >{(factura.iva_total5)} %</td>
                                             <td >{(factura.iva_total10)}</td>
 
                                             <td>
-                                                <div className="flex gap-2 ">
-                                                    <Button size="sm" variant="link" onClick={() => handleSetEditar(factura.id)}>
-                                                        <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
-                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                                    </Button>
-                                                    <Button size="sm" variant="link" onClick={() => handleSetDelete(factura.id)}>
-                                                        <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
-                                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                                    </Button>
-                                                </div>
+                                                <Button size="sm" variant="link" onClick={() => handleSetEditar(factura.id)}>
+                                                    <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                                </Button>
                                             </td>
                                         </tr>
                                     )))}
@@ -630,7 +686,7 @@ const CompraProductos = ({ }) => {
 
 
 
-            <Modal show={(showDeleteModal || showModal) ? "" : showDetalleModal} onHide={(handleClose)} centered>
+            <Modal show={(showModal) ? "" : showDetalleModal} onHide={(handleClose)} centered>
 
                 <Modal.Header closeButton>
                     <Modal.Title>
