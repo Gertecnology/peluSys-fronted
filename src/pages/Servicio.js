@@ -25,7 +25,6 @@ const Servicio = ({ }) => {
 
     useEffect(() => {
         obtenerServicios();
-        console.log(servicios)
     }, [user]);
 
     const handlePageChange = (page) => {
@@ -48,7 +47,12 @@ const Servicio = ({ }) => {
     } = useForm();
     const [serviciosFiltrados, setServiciosFiltrados] = useState([]);
     const [valor, setValor] = useState("");
-
+    const [iva, setIva] = useState(
+        [
+            { id: 1, value: 0.1 },
+            { id: 2, value: 0.05 }
+        ]
+    )
 
 
 
@@ -68,8 +72,8 @@ const Servicio = ({ }) => {
             servicioServices.getServicios()
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
-                    setServicios(datos.content);
-                    setTotalPages(datos.totalPages);
+                    setServicios(datos?.content);
+                    setTotalPages(datos?.totalPages);
                 })
                 .catch((error) => {
                     // Manejar el error
@@ -85,7 +89,6 @@ const Servicio = ({ }) => {
 
     const handleModal = () => {
         setShowModal(!showModal);
-        reset();
         setIsEditar(false);
 
 
@@ -93,11 +96,15 @@ const Servicio = ({ }) => {
 
 
     const formSubmit = (data) => {
-        handleModal()
+        handleModal();
         const api = `${process.env.API_URL}api/servicios/guardar`;
         axios.post(
             api,
-            data,
+            {
+                detalle: data.detalle,
+                precio: data.precio,
+                porcentajeIva: Number(data.porcentajeIva)
+            },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then((response) => {
@@ -108,6 +115,7 @@ const Servicio = ({ }) => {
             })
             .finally(() => {
                 obtenerServicios();
+                reset();
 
             })
 
@@ -117,17 +125,15 @@ const Servicio = ({ }) => {
         const servicio = servicios.find(s => s.id === id);
         setServicioEditar(servicio);
         handleModal();
-        setValue("detalle", servicio.detalle);
-        setValue("precio", servicio.precio);
         setIsEditar(true);
-        Object.keys(getValues()).forEach(key => setValue(key, servicio[key]));
+        Object.keys(getValues()).forEach(key => setValue(key, (servicio[key])));
 
     }
 
 
     const handleEditar = (data) => {
         handleModal();
-        const api = `${process.env.API_URL}api/servicios/actualizar/${servicioEditar.id}`;
+        const api = `${process.env.API_URL}api/servicios/actulizar/${servicioEditar.id}`;
         axios.post(api, {
             id: servicioEditar.id,
             ...data
@@ -137,16 +143,19 @@ const Servicio = ({ }) => {
             .then(() => {
                 toast.success('Servicio Actualizado');
                 obtenerServicios();
+
+
             })
             .catch((error) => {
-                toast.error('No se pudo actualizar!"');
+                toast.error('No se pudo actualizar el Servicio!!!"');
+
             })
             .finally(() => {
                 setServicioEditar(undefined);
                 setIsEditar(false);
+                reset();
 
             })
-        handleModal();
 
     }
 
@@ -191,6 +200,14 @@ const Servicio = ({ }) => {
         }, 500);
     }
 
+    const convertidorIva = (value) => {
+        if (value === 0.1) {
+            return 10;
+        }
+        else {
+            return 5;
+        }
+    }
 
     return (
         <Layout pagina={"Servicio"} titulo={"CRUD Servicio"} ruta={ruta.pathname}>
@@ -225,13 +242,25 @@ const Servicio = ({ }) => {
                                 })}
                                 type="number"
                                 placeholder="Precio del Servicio"
-                                isInvalid={errors.nombre}
+                                isInvalid={errors.precio}
                             />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>IVA</Form.Label>
+                            <Form.Select {...register("porcentajeIva", { required: true })} isInvalid={errors.procentajeIva}
+                            >
+                                <option defaultValue="" disabled selected hidden>IVA</option>
+
+                                {iva?.map((iva) => (
+                                    <option key={iva.id} value={iva.value}>{convertidorIva(iva.value)}</option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={handleModal}>
+                        <Button variant="secondary" onClick={() => { handleModal(), reset() }}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">
@@ -292,6 +321,7 @@ const Servicio = ({ }) => {
                                     <tr>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Precio</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Iva</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                                     </tr>
                                 </thead>
@@ -301,6 +331,8 @@ const Servicio = ({ }) => {
                                             <tr key={index} className="hover:bg-gray-50">
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{servicio.detalle}</td>
                                                 <td >{servicio.precio}</td>
+                                                <td >{convertidorIva(servicio.porcentajeIva)} %</td>
+
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(servicio.id)}>
@@ -319,6 +351,8 @@ const Servicio = ({ }) => {
                                         <tr key={index} className="hover:bg-gray-50">
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{servicio.detalle}</td>
                                             <td>{servicio.precio}</td>
+                                            <td >{convertidorIva(servicio.porcentajeIva)} %</td>
+
                                             <td>
                                                 <div className="flex gap-2 ">
                                                     <Button size="sm" variant="link" onClick={() => handleSetEditar(servicio.id)}>

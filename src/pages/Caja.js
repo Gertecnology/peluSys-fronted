@@ -16,7 +16,7 @@ const PAGE_SIZE = 10;
 const Caja = ({ }) => {
     const ruta = useRouter();
 
-    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+    const { register, handleSubmit, formState: { errors }, reset, getValues } = useForm();
 
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -39,7 +39,7 @@ const Caja = ({ }) => {
 
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
-    const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(true);
+    const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
     const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(true);
     const handleClose = () => setShowAbrirCajaModal(false);
     const [visible, setVisible] = useState(false);
@@ -200,8 +200,11 @@ const Caja = ({ }) => {
     }
 
     const formAbrirCaja = (data) => {
-        getValues("")
-        handleAbrirCajaModal();
+        if (getValues("monto") !== 0) {
+            alert("El monto de apertura debe ser mayor a 0");
+        } else {
+            console.log("paso")
+        }
 
     }
 
@@ -396,7 +399,7 @@ const Caja = ({ }) => {
                                     <span className="font-bold">Cajero:</span> {user?.username} {" "} {formatearEmpleado(user?.empleado_id)}
                                 </p>
                                 <p>
-                                     
+
                                 </p>
 
                             </div>
@@ -423,24 +426,9 @@ const Caja = ({ }) => {
                             />
                         </Form.Group>
 
-                        <Form.Group>
-                            <Form.Label>Numero de Caja</Form.Label>
-
-                            <div className="flex gap-2">
-                                <Form.Select {...register("caja", { required: true })}
-
-                                >
-                                    <option defaultValue="" disabled hidden>Selecciona una opción</option>
-                                    {cajas?.map((caja) => (
-                                        <option key={caja.id} value={caja.id}>{caja.detalle}</option>
-                                    ))}
-                                </Form.Select>
-                            </div>
-                        </Form.Group>
-
                     </Modal.Body>
                     <Modal.Footer>
-                       
+
                         <Button variant="primary" type="submit">
                             Abrir
                         </Button>

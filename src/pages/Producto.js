@@ -61,7 +61,6 @@ const Producto = ({ }) => {
         obtenerProductos();
         obtenerProveedores();
         obtenerMarcas();
-        console.log(marcas)
     }, [user]);
 
 
@@ -73,6 +72,10 @@ const Producto = ({ }) => {
             actualizar();
         }
     }, [valor])
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
 
 
     const paginatedProducto = productos.slice(
@@ -165,20 +168,19 @@ const Producto = ({ }) => {
 
 
     const formSubmit = (data) => {
+        console.log(data)
         handleModal()
         const api = `${process.env.API_URL}api/producto/guardar`;
-        console.log(data);
         axios.post(
             api,
             {
                 nombre: data.nombre,
                 detalle: data.detalle,
-                precio: data.precio,
-                cantidad: data.cantidad,
+                precioVenta: data.precioVenta,
+                precioCompra: data.precioCompra,
                 tipo_iva: data.iva,
                 id_marca: data.marca,
                 id_proveedor: data.proveedor,
-
             },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
@@ -187,6 +189,7 @@ const Producto = ({ }) => {
             })
             .catch((error) => {
                 toast.error('No se pudo agregar el producto!"');
+                reset();
             })
             .finally(() => {
                 obtenerProductos();
@@ -199,14 +202,11 @@ const Producto = ({ }) => {
     const handleSetEditar = (id) => {
 
         const producto = productos.find(p => p.id === id);
-        console.log(producto.id_marca)
         setMarcaSeleccionada(marcas?.find(m => m.id === producto.id_marca));
         setProductoEditar(producto);
         handleModal();
         setIsEditar(true);
-        console.log(getValues())
         Object.keys(getValues()).forEach(key => setValue(key, producto[key]));
-        //setValue("marca", marcaSeleccionada.id);
     }
 
     const handleEditar = (data) => {
@@ -230,10 +230,10 @@ const Producto = ({ }) => {
                 setProductoEditar(undefined);
                 setIsEditar(false);
                 setShowDetalleModal(false);
-                reset();
+
 
             })
-        handleModal();
+
 
     }
 
@@ -281,9 +281,8 @@ const Producto = ({ }) => {
         return proveedor?.nombre
     }
 
-
     const convertidorIva = (value) => {
-        if (value === 0.1 || value === 1) {
+        if (value === 0.1) {
             return 10;
         }
         else {
@@ -380,7 +379,7 @@ const Producto = ({ }) => {
                                 <Form.Select {...register("marca", { required: true })}
 
                                 >
-                                    <option defaultValue="" disabled hidden>Selecciona una opción</option>
+                                    <option defaultValue="" disabled selected hidden>Selecciona una opción</option>
                                     {marcas?.map((marca) => (
                                         <option key={marca.id} value={marca.id}>{marca.nombre}</option>
                                     ))}
@@ -408,26 +407,26 @@ const Producto = ({ }) => {
 
 
                         <Form.Group>
-                            <Form.Label>Cantidad</Form.Label>
+                            <Form.Label>Precio de Compra</Form.Label>
                             <Form.Control
-                                {...register("cantidad", {
+                                {...register("precioCompra", {
                                     required: true
                                 })}
                                 type="number"
-                                placeholder="Cantidad del producto"
-                                isInvalid={errors.cantidad}
+                                placeholder="Precio de Compra del producto"
+                                isInvalid={errors.precioCompra}
                             />
                         </Form.Group>
 
                         <Form.Group>
-                            <Form.Label>Precio</Form.Label>
+                            <Form.Label>Precio de Venta</Form.Label>
                             <Form.Control
-                                {...register("precio", {
+                                {...register("precioVenta", {
                                     required: true
                                 })}
                                 type="number"
-                                placeholder="Precio del producto"
-                                isInvalid={errors.precio}
+                                placeholder="Precio de Venta del producto"
+                                isInvalid={errors.precioVenta}
                             />
                         </Form.Group>
                         <Form.Group>
@@ -435,7 +434,7 @@ const Producto = ({ }) => {
                             <div className="flex gap-2">
                                 <Form.Select {...register("proveedor", { required: true })}
                                 >
-                                    <option value="" disabled hidden>Seleccione un Proveedor</option>
+                                    <option value="" disabled selected hidden>Seleccione un Proveedor</option>
                                     {proveedores?.map((proveedor) => (
                                         <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
                                     ))}
@@ -450,7 +449,7 @@ const Producto = ({ }) => {
                             <Form.Label>IVA</Form.Label>
                             <Form.Select {...register("iva", { required: true })}
                             >
-                                <option defaultValue="" disabled hidden>IVA</option>
+                                <option defaultValue="" disabled selected hidden>IVA</option>
 
                                 {iva?.map((iva) => (
                                     <option key={iva.id} value={iva.value}>{convertidorIva(iva.value)}</option>
@@ -526,9 +525,9 @@ const Producto = ({ }) => {
                                     <tr>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">Marca</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Precio</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Precio Compra</th>
+                                        <th scope="col" className="px-6 py-4 font-medium text-white">Precio Venta</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white">IVA</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Cantidad</th>
                                         <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                                     </tr>
                                 </thead>
@@ -538,9 +537,9 @@ const Producto = ({ }) => {
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
                                                 <td>{convertidorMarca(producto.id_marca)}</td>
-                                                <td>{producto.precio}</td>
+                                                <td>{producto.precioCompra} Gs.</td>
+                                                <td>{producto.precioVenta} Gs.</td>
                                                 <td>{convertidorIva(producto.tipo_iva)} %</td>
-                                                <td>{convertidorIva(producto.cantidad)}</td>
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
@@ -559,9 +558,9 @@ const Producto = ({ }) => {
                                         <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
                                             <td>{convertidorMarca(producto.id_marca)}</td>
-                                            <td>{producto.precio}</td>
+                                            <td>{producto.precioCompra} Gs.</td>
+                                            <td>{producto.precioVenta} Gs.</td>
                                             <td>{convertidorIva(producto.tipo_iva)} %</td>
-                                            <td>{convertidorIva(producto.cantidad)}</td>
                                             <td>
                                                 <div className="flex gap-2 ">
                                                     <Button size="sm" variant="link" onClick={() => handleSetEditar(producto.id)}>
@@ -665,7 +664,6 @@ const Producto = ({ }) => {
                         <Form.Control
                             type="text"
                             placeholder="Ingrese el nombre de la Marca"
-                            isInvalid={errors.nombre}
                             value={nombreMarca}
                             onChange={e => setNombreMarca(e.target.value)}
 
@@ -696,6 +694,17 @@ const Producto = ({ }) => {
                         <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+                        <Form.Group>
+                            <Form.Label>Timbrado</Form.Label>
+                            <Form.Control
+                                {...register("timbrado", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Timbrado del Proveedor"
+                                isInvalid={errorform2.timbrado}
+                            />
+                        </Form.Group>
 
                         <Form.Group>
                             <Form.Label>Nombre del Proveedor</Form.Label>
@@ -705,7 +714,7 @@ const Producto = ({ }) => {
                                 })}
                                 isInvalid={errorform2.nombre}
                                 type="text"
-                                placeholder="Ingrese el nombre de la Marca"
+                                placeholder="Ingrese el nombre del Proveedor"
 
                             />
                         </Form.Group>
@@ -716,6 +725,7 @@ const Producto = ({ }) => {
                                 {...registerForm2("direccion", {
                                     required: true
                                 })}
+                                placeholder="Ingrese la dirección del Proveedor"
                                 isInvalid={errorform2.direccion}
                                 type="text"
 
@@ -730,7 +740,7 @@ const Producto = ({ }) => {
                                 })}
                                 isInvalid={errorform2.ruc}
                                 type="number"
-                                placeholder="Ingrese RUC"
+                                placeholder="Ingrese RUC del Proveedor"
 
 
                             />
@@ -744,7 +754,7 @@ const Producto = ({ }) => {
                                 })}
                                 isInvalid={errorform2.telefono}
                                 type="number"
-                                placeholder="Ingrese número telefono"
+                                placeholder="Ingrese número telefono del Proveedor"
 
                             />
                         </Form.Group>
