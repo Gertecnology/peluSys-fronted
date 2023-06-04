@@ -133,7 +133,7 @@ const Servicio = ({ }) => {
 
     const handleEditar = (data) => {
         handleModal();
-        const api = `${process.env.API_URL}api/servicios/actulizar/${servicioEditar.id}`;
+        const api = `${process.env.API_URL}api/servicios/actualizar/${servicioEditar.id}`;
         axios.post(api, {
             id: servicioEditar.id,
             ...data

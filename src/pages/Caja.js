@@ -34,7 +34,7 @@ const Caja = ({ }) => {
     const [facturasFiltradas, setFacturasFiltradas] = useState([]);
     const [seleccionado, setSeleccionado] = useState([]);
     const [facturaDetalle, setFacturaDetalle] = useState([]);
-    const [facturaSeleccionadaDetalle, setFacturaSelecciionadaDetalle] = useState([]);
+    const [facturaSeleccionadaDetalle, setFacturaSeleccionadaDetalle] = useState([]);
 
 
     const [isBuscar, setIsBuscar] = useState(false);
@@ -232,7 +232,7 @@ const Caja = ({ }) => {
     const handleRowClick = (id) => {
         const factura = facturas.find(f => f.id === id);
         setFacturaDetalle(factura);
-        setFacturaSelecciionadaDetalle(factura.detalles);
+        setFacturaSeleccionadaDetalle(factura.detalles);
         setShowDetalleFacturaModal(true);
 
     }
