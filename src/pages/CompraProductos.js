@@ -201,11 +201,14 @@ const CompraProductos = ({ }) => {
     };
 
 
+    axios.interceptors.request.use((config) => {
+        console.log('Solicitud enviada:', JSON.stringify(config.data));
+        return config;
+    });
 
     const formSubmit = (data) => {
         console.log(data)
         handleModal();
-        reset();
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
         if (isSubMenuProductoOpen) {
             axios.post(
@@ -217,7 +220,7 @@ const CompraProductos = ({ }) => {
                     detalles: [
                         {
                             cantidad: Number(data.cantidad),
-                            producto_id: Number(data.producto_id),
+                            producto_id: Number(data.productoId),
                             servicio_id: 0,
                         }
                     ]
@@ -225,15 +228,19 @@ const CompraProductos = ({ }) => {
                 { headers: { "Authorization": `Bearer ${user.token}` } }
             )
                 .then((response) => {
-                    toast.success('Factura Agregada');
+                    toast.success('Compra Agregada');
                 })
                 .catch((error) => {
                     toast.error('No se pudo agregar!"');
                     console.log(error)
+                    reset();
+
 
                 })
                 .finally(() => {
                     obtenerFacturas();
+                    reset();
+
 
 
                 })
@@ -249,7 +256,7 @@ const CompraProductos = ({ }) => {
                         {
                             cantidad: Number(data.cantidad),
                             producto_id: 0,
-                            servicio_id: Number(data.servicio_id),
+                            servicio_id: Number(data.servicioId),
                         }
                     ]
                 },
@@ -265,6 +272,8 @@ const CompraProductos = ({ }) => {
                 })
                 .finally(() => {
                     obtenerFacturas();
+                    reset();
+
 
                 })
         }
@@ -587,7 +596,7 @@ const CompraProductos = ({ }) => {
                                 <tbody className="divide-y divide-gray-100">
                                     {isBuscar ? (
                                         facturasFiltradas?.map((factura, index) => (
-                                            <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(producto.id)}>
+                                            <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                                 <td>{convertidorProveedor(factura.proveedor_id)}</td>
                                                 <td >{(factura.fecha)}</td>
