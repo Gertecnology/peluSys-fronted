@@ -9,6 +9,7 @@ import ProductoApi from "./api/ProductoApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
 import axios from "axios";
 import { FiEdit2 } from "react-icons/fi";
+import { MdDeleteOutline } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io"
 import { toast } from "react-toastify";
 import { formatearDecimales, formatearFecha } from "@/helpers";
@@ -170,12 +171,13 @@ const CompraProductos = ({ }) => {
 
     const DetallesTabla = ({ detalles }) => {
         return (
-            <div className="scrollable-table-container">
+            <div className="mt-2 scrollable-table-container">
                 <Table striped bordered hover>
                     <thead>
                         <tr>
                             <th>Producto</th>
                             <th>Cantidad</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -183,6 +185,12 @@ const CompraProductos = ({ }) => {
                             <tr key={index}>
                                 <td>{formatearDetalleProducto(detalle.producto_id)}</td>
                                 <td>{detalle.cantidad}</td>
+                                <td>
+                                    <Button size="sm" variant="link" onClick={() => handleSetEliminarDetalle(detalle.producto_id)}>
+                                        <MdDeleteOutline color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                    </Button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -191,6 +199,10 @@ const CompraProductos = ({ }) => {
         );
     };
 
+    const handleSetEliminarDetalle = (id) => {
+        const detalleActualizado = productosAgregar.filter(p => p.producto_id !== id);
+        setProductosAgregar(detalleActualizado);
+    }
 
     const handleAgregarDetalle = (data) => {
         if (data.productoId && data.cantidad > 0) {
@@ -199,8 +211,18 @@ const CompraProductos = ({ }) => {
                 producto_id: Number(data.productoId),
                 servicio_id: 0
             };
-            setProductosAgregar([...productosAgregar, detalleProducto]);
-            console.log(productosAgregar)
+            const productoExistente = productosAgregar.find(
+                (producto) => producto.producto_id === detalleProducto.producto_id
+            );
+
+            if (productoExistente) {
+                // Si el producto ya existe, incrementar la cantidad
+                productoExistente.cantidad += detalleProducto.cantidad;
+                setProductosAgregar([...productosAgregar]);
+            } else {
+                // Si el producto no existe, agregarlo al arreglo
+                setProductosAgregar([...productosAgregar, detalleProducto]);
+            }
         };
         resetDetalle({
             ...data,
@@ -374,7 +396,7 @@ const CompraProductos = ({ }) => {
                             <Form.Label>Estado de la Factura </Form.Label>
                             <Form.Select {...register("estado", { required: true })}
                             >
-                                <option disabled selected hidden>Seleccione un Estado</option>
+                                <option value="" disabled selected>Seleccione un Estado</option>
 
                                 {estado?.map((estado) => (
                                     <option key={estado.id} value={estado.value}>{estado.value}</option>
@@ -426,7 +448,7 @@ const CompraProductos = ({ }) => {
                     </Modal.Body>
                     <Modal.Footer>
 
-                        <Button variant="secondary" onClick={() => { handleModal(), reset(), resetDetalle() }}>
+                        <Button variant="secondary" onClick={() => { handleModal(), reset(), resetDetalle(), setProductosAgregar([]), setShowDetalleModal(false) }}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">
