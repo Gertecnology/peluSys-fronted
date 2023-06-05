@@ -1,18 +1,17 @@
 import Layout from "@/layout/Layout";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from 'next/router'
 import FacturasApi from "./api/FacturasApi";
 import ProveedorApi from "./api/ProveedorApi";
 import ProductoApi from "./api/ProductoApi";
-import ServicioApi from "./api/ServiciosApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
 import axios from "axios";
 import { FiEdit2 } from "react-icons/fi";
-import { AiOutlineDelete } from "react-icons/ai";
 import { IoMdAddCircleOutline } from "react-icons/io"
 import { toast } from "react-toastify";
+import { formatearDecimales, formatearFecha } from "@/helpers";
 
 
 const PAGE_SIZE = 10;
@@ -21,10 +20,7 @@ const CompraProductos = ({ }) => {
     const ruta = useRouter();
 
     const [facturas, setFacturas] = useState([]);
-    const [facturasMostrar, setFacturasMostrar] = useState([]);
-    const [clientes, setClientes] = useState([]);
     const [productos, setProductos] = useState([]);
-    const [servicios, setServicios] = useState([]);
     const [proveedores, setProveedores] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -36,15 +32,13 @@ const CompraProductos = ({ }) => {
         obtenerFacturas();
         obtenerProductos();
         obtenerProveedores();
-        obtenerServicios();
-
     }, [user]);
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
     };
 
-    const paginatedFactura = facturasMostrar?.slice(
+    const paginatedFactura = facturas?.slice(
         currentPage * PAGE_SIZE,
         (currentPage + 1) * PAGE_SIZE
     );
@@ -54,19 +48,22 @@ const CompraProductos = ({ }) => {
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [isSubMenuServicioOpen, setIsSubMenuServicioOpen] = useState(false);
     const [isSubMenuProductoOpen, setIsSubMenuProductoOpen] = useState(false);
     const [showDetalleModal, setShowDetalleModal] = useState(false);
-
+    const formDos = useForm();
     const [idEliminar, setIdEliminar] = useState(-1)
-    const [servicioEditar, setServicioEditar] = useState(undefined);
-    const { register, handleSubmit, formState: { errors, isLoading }, setValue, reset, getValues
+    const [facturaEditar, setFacturaEditar] = useState(undefined);
+    const { register, handleSubmit, formState: { errors }, setValue, reset, getValues
     } = useForm();
+    const { register: registerDetalle, handleSubmit: handleSubmitDetalle, formState: { errors: errorsDetalle }, setValue: setValueDetalle, reset: resetDetalle, getValues: getValuesDetalle
+    } = formDos;
     const [facturasFiltradas, setFacturasFiltradas] = useState([]);
     const [facturaSeleccionada, setFacturaSeleccionada] = useState([]);
     const [facturaSeleccionadaDetalle, setFacturaSeleccionadaDetalle] = useState([]);
+    const [productosAgregar, setProductosAgregar] = useState([]);
     const [valor, setValor] = useState("");
     const [valorFiltro, setValorFiltro] = useState("");
+    const [detalles, setDetalles] = useState([]); // Estado para almacenar los detalles de la factura
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -115,8 +112,6 @@ const CompraProductos = ({ }) => {
                     // Realizar algo con los datos obtenidos
                     setFacturas(datos?.content);
                     setTotalPages(datos?.totalPages);
-                    const filtrado = facturas?.filter(factura => factura.pagado === "PAGADO");
-                    setFacturasMostrar(filtrado);
                 })
                 .catch((error) => {
                     // Manejar el error
@@ -160,21 +155,7 @@ const CompraProductos = ({ }) => {
     }
 
 
-    const obtenerServicios = () => {
 
-        const servicioApi = new ServicioApi(user.token);
-
-        servicioApi.getServiciosList()
-            .then((datos) => {
-                // Realizar algo con los datos obtenidos
-                setServicios(datos);
-            })
-            .catch((error) => {
-                // Manejar el error
-                console.error("Error al obtener los Servicios:", error);
-            });
-
-    }
     const actualizar = () => {
         valor === "" ? setIsBuscar(false) : null;
     }
@@ -187,115 +168,95 @@ const CompraProductos = ({ }) => {
 
     };
 
-    const handleSubMenuServicioClick = (event) => {
-        event.preventDefault();
-        setIsSubMenuServicioOpen(!isSubMenuServicioOpen);
-        setIsSubMenuProductoOpen(false);
-
+    const DetallesTabla = ({ detalles }) => {
+        return (
+            <div className="scrollable-table-container">
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {detalles.map((detalle, index) => (
+                            <tr key={index}>
+                                <td>{formatearDetalleProducto(detalle.producto_id)}</td>
+                                <td>{detalle.cantidad}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </div>
+        );
     };
 
-    const handleSubMenuProductoClick = (event) => {
-        event.preventDefault();
-        setIsSubMenuProductoOpen(!isSubMenuProductoOpen);
-        setIsSubMenuServicioOpen(false);
-    };
 
-
-    axios.interceptors.request.use((config) => {
-        console.log('Solicitud enviada:', JSON.stringify(config.data));
-        return config;
-    });
+    const handleAgregarDetalle = (data) => {
+        if (data.productoId && data.cantidad > 0) {
+            const detalleProducto = {
+                cantidad: Number(data.cantidad),
+                producto_id: Number(data.productoId),
+                servicio_id: 0
+            };
+            setProductosAgregar([...productosAgregar, detalleProducto]);
+            console.log(productosAgregar)
+        };
+        resetDetalle({
+            ...data,
+            cantidad: ""
+        });
+    }
 
     const formSubmit = (data) => {
-        console.log(data)
         handleModal();
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
-        if (isSubMenuProductoOpen) {
-            axios.post(
-                api,
-                {
-                    proveedorId: Number(data.proveedorId),
-                    numeroFactura: data.factura,
-                    pagado: data.estado,
-                    detalles: [
-                        {
-                            cantidad: Number(data.cantidad),
-                            producto_id: Number(data.productoId),
-                            servicio_id: 0,
-                        }
-                    ]
-                },
-                { headers: { "Authorization": `Bearer ${user.token}` } }
-            )
-                .then((response) => {
-                    toast.success('Compra Agregada');
-                })
-                .catch((error) => {
-                    toast.error('No se pudo agregar!"');
-                    console.log(error)
-                    reset();
+
+        axios.post(
+            api,
+            {
+                proveedorId: Number(data.proveedorId),
+                numeroFactura: data.factura,
+                pagado: data.estado,
+                detalles: productosAgregar
+            },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                toast.success('Compra Agregada');
+            })
+            .catch((error) => {
+                toast.error('No se pudo agregar!"');
+                console.log(error)
+                reset();
 
 
-                })
-                .finally(() => {
-                    obtenerFacturas();
-                    reset();
+            })
+            .finally(() => {
+                obtenerFacturas();
+                reset();
+            })
 
 
-
-                })
-        }
-        else {
-            axios.post(
-                api,
-                {
-                    proveedorId: Number(data.proveedorId),
-                    numeroFactura: data.factura,
-                    pagado: data.estado,
-                    detalles: [
-                        {
-                            cantidad: Number(data.cantidad),
-                            producto_id: 0,
-                            servicio_id: Number(data.servicioId),
-                        }
-                    ]
-                },
-                { headers: { "Authorization": `Bearer ${user.token}` } }
-            )
-                .then((response) => {
-                    toast.success('Factura Agregada');
-                })
-                .catch((error) => {
-                    toast.error('No se pudo agregar!"');
-                    reset();
-
-                })
-                .finally(() => {
-                    obtenerFacturas();
-                    reset();
-
-
-                })
-        }
 
 
     }
 
     const handleSetEditar = (id) => {
-        const servicio = facturas.find(s => s.id === id);
-        setServicioEditar(servicio);
+        const factura = facturas.find(s => s.id === id);
+        setFacturaEditar(factura);
         handleModal();
         setIsEditar(true);
-        Object.keys(getValues()).forEach(key => setValue(key, (servicio[key])));
+        Object.keys(getValues()).forEach(key => setValue(key, (factura[key])));
 
     }
 
 
     const handleEditar = (data) => {
         handleModal();
-        const api = `${process.env.API_URL}api/servicios/actulizar/${servicioEditar.id}`;
+        const api = `${process.env.API_URL}api/servicios/actulizar/${facturaEditar.id}`;
         axios.post(api, {
-            id: servicioEditar.id,
+            id: facturaEditar.id,
             ...data
         },
             { headers: { "Authorization": `Bearer ${user.token}` } }
@@ -311,7 +272,7 @@ const CompraProductos = ({ }) => {
 
             })
             .finally(() => {
-                setServicioEditar(undefined);
+                setFacturaEditar(undefined);
                 setIsEditar(false);
                 reset();
 
@@ -322,15 +283,15 @@ const CompraProductos = ({ }) => {
 
     const handleSelectChange = (e) => {
         setValorFiltro(e.target.value);
-        // Realiza alguna acción con el valor seleccionado
-        console.log("Valor seleccionado:", e.target.value);
     };
 
     const handleFiltrar = (estado) => {
+        const valorPredeterminado = "PENDIENTE";
+        const valor = estado || valorPredeterminado;
         setCargando(true);
         setIsBuscar(true);
         const facturaApi = new FacturasApi(user.token);
-        facturaApi.filterFacturasCompra(estado)
+        facturaApi.filterFacturasCompra(valor)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
                 setFacturasFiltradas(datos);
@@ -365,15 +326,9 @@ const CompraProductos = ({ }) => {
 
     }
 
-    const formatearDetalleNombre = (idP, idS) => {
+    const formatearDetalleProducto = (idP) => {
         const producto = productos.find(producto => producto.id === idP);
-        const servicio = servicios.find(servicio => servicio.id === idS);
-        if (producto?.id === undefined || producto?.id === 0) {
-            return servicio?.detalle
-        } else {
-
-            return producto?.nombre;
-        }
+        return producto?.nombre;
     }
 
 
@@ -381,17 +336,14 @@ const CompraProductos = ({ }) => {
     return (
         <Layout pagina={"Compra de Productos"} titulo={"CRUD Compras Producto"} ruta={ruta.pathname}>
 
-            <Modal show={showModal} onHide={handleModal}>
+            <Modal size="xl" show={showModal} onHide={handleModal}>
                 <Form
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header>
-                        <Modal.Title> {isEditar ? "Editar Factura" : "Cargar Factura"}</Modal.Title>
+                        <Modal.Title> {isEditar ? "Editar Factura" : "Comprar Producto(s)"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-
-
-
 
                         <Form.Group>
                             <Form.Label>Proveedor</Form.Label>
@@ -429,90 +381,52 @@ const CompraProductos = ({ }) => {
                                 ))}
                             </Form.Select>
                         </Form.Group>
-
-                        <Form.Label className="mt-3 font-bold">Elija por favor</Form.Label>
                         <div className="bg-white border-r w-full">
                             <ul className="mt-2 p-0">
-
-
-                                <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
-                                    <button
-                                        onClick={handleSubMenuServicioClick}
-                                        className="w-full border rounded py-2 appearance-none bg-white focus:outline-none focus:border-blue-500">
-                                        <p className="text-lg mb-0">Servicio</p>
-                                    </button>
-                                    {isSubMenuServicioOpen && (
-                                        <ul className="w-full p-0 mt-2">
-                                            <li>
-
-                                                <Form.Group>
-                                                    <Form.Select {...register("servicioId")}
-                                                    >
-                                                        <option disabled selected hidden>Seleccione un Servicio</option>
-
-                                                        {servicios?.map((servicio) => (
-                                                            <option key={servicio.id} value={servicio.id}>{servicio.detalle}</option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </li>
-
-                                        </ul>
-                                    )}
-                                </li>
                             </ul>
                         </div>
 
-                        <div className="bg-white border-r w-full">
-                            <ul className="mt-2 p-0">
-                                <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
-                                    <button
-                                        onClick={handleSubMenuProductoClick}
-                                        className="w-full border rounded py-2 appearance-none bg-white focus:outline-none focus:border-blue-500">
-                                        <p className="text-lg mb-0">Producto</p>
-                                    </button>
-                                    {isSubMenuProductoOpen && (
-                                        <ul className="w-full p-0 mt-2">
-                                            <li>
+                        <Form.Group>
+                            <Form.Select {...registerDetalle("productoId")}
+                            >
+                                <option disabled selected hidden>Seleccione un Producto</option>
 
-                                                <Form.Group>
-                                                    <Form.Select {...register("productoId")}
-                                                    >
-                                                        <option disabled selected hidden>Seleccione un Producto</option>
-
-                                                        {productos?.map((producto) => (
-                                                            <option key={producto.id} value={producto.id}>{producto.nombre}</option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </li>
+                                {productos?.map((producto) => (
+                                    <option key={producto.id} value={producto.id}>{producto.nombre}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
 
 
 
-                                            <li>
-                                                <Form.Group>
-                                                    <Form.Label>Cantidad a Comprar</Form.Label>
-                                                    <Form.Control
-                                                        {...register("cantidad")}
-                                                        type="text"
-                                                        placeholder="Cantidad del Producto"
-                                                        isInvalid={errors.cantidad}
-                                                    />
-                                                </Form.Group>
-                                            </li>
-                                        </ul>
-                                    )}
-                                </li>
-                            </ul>
+
+                        <Form.Group>
+                            <Form.Label>Cantidad a Comprar</Form.Label>
+                            <Form.Control
+                                {...registerDetalle("cantidad")}
+                                type="text"
+                                placeholder="Cantidad del Producto"
+                                isInvalid={errorsDetalle.cantidad}
+                            />
+                        </Form.Group>
+
+
+                        {/* Botón para agregar el detalle de factura */}
+                        <div className="mt-2 ml-1">
+                            <Button variant="success" onClick={handleSubmitDetalle(handleAgregarDetalle)}>
+                                Agregar Detalle
+                            </Button>
                         </div>
 
+
+                        <DetallesTabla detalles={productosAgregar} />
 
 
 
                     </Modal.Body>
                     <Modal.Footer>
 
-                        <Button variant="secondary" onClick={() => { handleModal(), reset(), setIsSubMenuProductoOpen(false), setIsSubMenuServicioOpen(false); }}>
+                        <Button variant="secondary" onClick={() => { handleModal(), reset(), resetDetalle() }}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">
@@ -619,11 +533,11 @@ const CompraProductos = ({ }) => {
                                         <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                             <td>{convertidorProveedor(factura.proveedor_id)}</td>
-                                            <td >{(factura.fecha)}</td>
+                                            <td >{formatearFecha(factura.fecha)}</td>
                                             <td >{(factura.pagado)}</td>
                                             <td >{(factura.precio_total)}</td>
-                                            <td >{(factura.iva_total5)} %</td>
-                                            <td >{(factura.iva_total10)}</td>
+                                            <td >{formatearDecimales(factura.iva_total5, 4)} %</td>
+                                            <td >{formatearDecimales(factura.iva_total10, 4)}</td>
 
                                             <td>
                                                 <Button size="sm" variant="link" onClick={() => handleSetEditar(factura.id)}>
@@ -744,7 +658,7 @@ const CompraProductos = ({ }) => {
                                 <div className="w-3/4 border-r-2 border-gray-400">
 
                                     <p>
-                                        {formatearDetalleNombre(factura.producto_id, factura.servicio_id)}
+                                        {formatearDetalleProducto(factura.producto_id)}
                                     </p>
 
                                 </div>
