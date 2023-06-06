@@ -37,6 +37,8 @@ const Citas = () => {
   }, [])
 
 
+  useEffect( () => console.log(fechaSeleccionada), [fechaSeleccionada] )
+
   useEffect(() => {
     if (!fechaSeleccionada) return
     setFilaSeleccionada(-1)
@@ -59,9 +61,9 @@ const Citas = () => {
 
   const actualizarEventos = () => {
     const eventosActualizados = citas.reduce((eventos, cita) => {
-      const { fecha } = cita;
+      const { fechaEstimada } = cita;
       const eventoExistente = eventos.find((evento) =>
-        moment(evento.start).isSame(fecha, 'day')
+        moment(evento.start).isSame(fechaEstimada, 'day')
       );
 
       if (eventoExistente) {
@@ -70,7 +72,7 @@ const Citas = () => {
         eventos.push({
           id: eventos.length + 1,
           title: '1',
-          start: moment(fecha).toDate(),
+          start: moment(fechaEstimada).toDate(),
         });
       }
 
@@ -104,28 +106,9 @@ const Citas = () => {
       estado_cita: "ESPERA",
       estado_pago: "PENDIENTE",
       fechaEstimada: fechaSeleccionada.format("YYYY-MM-DD"),
-      servicio_id: serviciosSeleccionados.map(servicio => servicio.value )
+      servicio_id: serviciosSeleccionados.map(servicio => servicio.value)
     }
     console.log(datos)
-
-    /*
-    {
-  "fechaEstimada": "2023-06-02",
-  "horaEstimada": {
-    "hour": 0,
-    "minute": 0,
-    "second": 0,
-    "nano": 0
-  },
-  "detalle": "string",
-  "estado_cita": "ESPERA",
-  "estado_pago": "PAGADO",
-  "empleado_id": 0,
-  "nombreCliente": "string",
-  "servicio_id": [
-    0
-  ]
-}*/ 
 
     axios.post(
       api,
@@ -150,7 +133,6 @@ const Citas = () => {
 
     axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
       .then(res => {
-        console.log(res.data)
         setClientes(res.data);
       })
       .catch((error) => {
@@ -165,8 +147,6 @@ const Citas = () => {
 
     axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
       .then(res => {
-        console.log("Servicios: ")
-        console.log(res.data)
         setServicios(res.data);
       })
       .catch((error) => {
@@ -182,7 +162,6 @@ const Citas = () => {
     axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
       .then(res => {
         const empleados = res.data.content
-        console.log(empleados)
         setPeluqueros(empleados.filter(empleado => empleado.cargo === "PELUQUERO"))
       })
       .catch((error) => {
@@ -220,9 +199,9 @@ const Citas = () => {
 
                   <Form.Group>
                     <Form.Label>Peluquero</Form.Label>
-                    <Select 
+                    <Select
                       isMulti={false}
-                      options = {peluqueros.map(p => { return {value:p.empleado_id, label: p.nombre+" "+p.apellido}})}
+                      options={peluqueros.map(p => { return { value: p.empleado_id, label: p.nombre + " " + p.apellido } })}
                       value={peluqueroSeleccionado}
                       onChange={(v) => setPeluqueroSeleccionado(v)}
                     />
@@ -291,7 +270,7 @@ const Citas = () => {
             </div>
           </div>
           <div className="flex p-1 justify-center text-center">
-            {citas.filter(cita => moment(cita.fecha).startOf("day").isSame(fechaSeleccionada.startOf("day"))).length ?
+            {citas.filter(cita => moment(cita.fechaEstimada).startOf("day").isSame(fechaSeleccionada.startOf("day"))).length ?
               <>
                 <div className="mt-2 h-96">
                   <Table hover size="sm" className="bg-white transition-all w-full">
@@ -305,47 +284,48 @@ const Citas = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {citas.filter(cita => moment(cita.fecha).startOf("day").isSame(fechaSeleccionada.startOf("day")))
-                        .sort((citaA, citaB) => moment(citaA.hora, 'HH:mm').diff(moment(citaB.hora, 'HH:mm')))
-                        .map((cita, index) =>
-                          <>
-                            <tr key={index} className="text-center justify-center align-middle items-center hover:cursor-pointer" onClick={() => setFilaSeleccionada(index)}>
-                              <td>{cita.horaEstimada.slice(0, -3)}</td>
-                              <td>{cita.nombreCliente}</td>
-                              <td>{peluqueros.find(p => p.empleado_id === cita.empleado_id)?.nombre}</td>
-                              <td> <Badge>{cita.estado_cita}</Badge> </td>
-                              <td>
-                                <div className="flex text-center justify-center align-middle items-center">
-                                  <Button size="sm" variant="link">
-                                    <FiEdit2 color="#808080" size="20px" onMouseOver={({ target }) => target.style.color = "blue"} onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                  </Button>
-                                  <Button size="sm" variant="link">
-                                    <AiOutlineDelete color="#808080" size="20px" onMouseOver={({ target }) => target.style.color = "red"} onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                            {filaSeleccionada === index && (
-                              <tr>
-                                <td colSpan="5">
-                                  <Accordion defaultActiveKey="0" className={`transition-all duration-500 ${filaSeleccionada === index ? "visible" : "invisible"}`}>
-                                    <Accordion.Item eventKey="0">
-                                      <Accordion.Body>
-                                        <div className="block text-center">
-                                          <div>{cita.detalle}</div>
-                                          <div className="mt-3 font-bold">Servicios:</div>
-                                          <div className="gap-3">/* Listado de servicios */
-                                            {cita.servicios?.map((servicio) => <Badge bg="success" className="mx-1">{servicio.label}</Badge>)}
-                                          </div>
-                                        </div>
-                                      </Accordion.Body>
-                                    </Accordion.Item>
-                                  </Accordion>
+                      {citas.filter(cita => moment(cita.fechaEstimada).isSame(fechaSeleccionada,"day") )
+                          .sort((citaA, citaB) => moment(citaA.horaEstimada, 'HH:mm').diff(moment(citaB.horaEstimada, 'HH:mm')))
+                          .map((cita, index) =>
+                            <>
+                              <tr key={index} className="text-center justify-center align-middle items-center hover:cursor-pointer" onClick={() => setFilaSeleccionada(index)}>
+                                <td>{cita.horaEstimada.slice(0, -3)}</td>
+                                <td>{cita.nombreCliente}</td>
+                                <td>{peluqueros.find(p => p.empleado_id === cita.empleado_id)?.nombre}</td>
+                                <td> <Badge>{cita.estado_cita}</Badge> </td>
+                                <td>
+                                  <div className="flex text-center justify-center align-middle items-center">
+                                    <Button size="sm" variant="link">
+                                      <FiEdit2 color="#808080" size="20px" onMouseOver={({ target }) => target.style.color = "blue"} onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                    </Button>
+                                    <Button size="sm" variant="link">
+                                      <AiOutlineDelete color="#808080" size="20px" onMouseOver={({ target }) => target.style.color = "red"} onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
-                            )}
-                          </>
-                        )}
+                              {filaSeleccionada === index && (
+                                <tr>
+                                  <td colSpan="5">
+                                    <Accordion defaultActiveKey="0" className={`transition-all duration-500 ${filaSeleccionada === index ? "visible" : "invisible"}`}>
+                                      <Accordion.Item eventKey="0">
+                                        <Accordion.Body>
+                                          <div className="block text-center">
+                                            <div>{cita.detalle}</div>
+                                            <div className="mt-3 font-bold">Servicios:</div>
+                                            <div className="gap-3">/* Listado de servicios */
+                                              {cita.servicios?.map((servicio) => <Badge bg="success" className="mx-1">{servicio.label}</Badge>)}
+                                            </div>
+                                          </div>
+                                        </Accordion.Body>
+                                      </Accordion.Item>
+                                    </Accordion>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          )
+                      }
                     </tbody>
                   </Table>
                 </div>

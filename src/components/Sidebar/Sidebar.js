@@ -1,12 +1,14 @@
 
+import { AuthContext } from "@/pages/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { FcCalendar, FcShop } from "react-icons/fc";
 
 
 const Sidebar = ({ children }) => {
     const router = useRouter();
     const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+    const {setUser} = useContext(AuthContext)
 
     const handleMenuClick = (route) => {
         router.push(route);
@@ -77,7 +79,10 @@ const Sidebar = ({ children }) => {
                             )}
                         </li>
                     </ul>
+                    
+
                 </div>
+
             </aside>
 
             {/* Contenido principal */}
