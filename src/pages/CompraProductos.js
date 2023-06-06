@@ -49,7 +49,6 @@ const CompraProductos = ({ }) => {
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [isSubMenuProductoOpen, setIsSubMenuProductoOpen] = useState(false);
     const [showDetalleModal, setShowDetalleModal] = useState(false);
     const formDos = useForm();
     const [idEliminar, setIdEliminar] = useState(-1)
@@ -267,40 +266,53 @@ const CompraProductos = ({ }) => {
     const handleSetEditar = (id) => {
         const factura = facturas.find(s => s.id === id);
         setFacturaEditar(factura);
+        const proveedor = proveedores?.find(p => p.id === factura.proveedor_id);
+        console.log(facturaEditar)
+        setValue("factura", factura.numero_factura);
+        setValue("proveedorId", proveedor.id);
+        setValue("estado", factura.pagado);
+        setProductosAgregar(...productosAgregar, factura.detalles);
         handleModal();
         setIsEditar(true);
-        Object.keys(getValues()).forEach(key => setValue(key, (factura[key])));
-
     }
 
 
     const handleEditar = (data) => {
         handleModal();
-        const api = `${process.env.API_URL}api/servicios/actulizar/${facturaEditar.id}`;
+        const api = `${process.env.API_URL}api/factura/actualizar/${facturaEditar.id}`;
         axios.post(api, {
             id: facturaEditar.id,
-            ...data
+            data: {
+
+                proveedorId: Number(data.proveedorId),
+                numeroFactura: data.factura,
+                pagado: data.estado,
+                detalles: productosAgregar
+            }
         },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then(() => {
-                toast.success('Servicio Actualizado');
+                toast.success('Factura Actualizado');
                 obtenerFacturas();
 
 
             })
             .catch((error) => {
-                toast.error('No se pudo actualizar el Servicio!!!"');
+                toast.error('No se pudo actualizar la Factura!!!"');
 
             })
             .finally(() => {
                 setFacturaEditar(undefined);
                 setIsEditar(false);
                 reset();
-
+                resetDetalle();
+                setProductosAgregar([]);
+                setShowDetalleModal(false);
             })
 
     }
+
 
 
     const handleSelectChange = (e) => {
@@ -363,7 +375,7 @@ const CompraProductos = ({ }) => {
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header>
-                        <Modal.Title> {isEditar ? "Editar Factura" : "Comprar Producto(s)"}</Modal.Title>
+                        <Modal.Title> {isEditar ? "Editar Factura de Compra" : "Comprar Producto(s)"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 
@@ -403,12 +415,9 @@ const CompraProductos = ({ }) => {
                                 ))}
                             </Form.Select>
                         </Form.Group>
-                        <div className="bg-white border-r w-full">
-                            <ul className="mt-2 p-0">
-                            </ul>
-                        </div>
 
                         <Form.Group>
+                            <Form.Label>Seleccione un Producto</Form.Label>
                             <Form.Select {...registerDetalle("productoId")}
                             >
                                 <option disabled selected hidden>Seleccione un Producto</option>
@@ -426,7 +435,7 @@ const CompraProductos = ({ }) => {
                             <Form.Label>Cantidad a Comprar</Form.Label>
                             <Form.Control
                                 {...registerDetalle("cantidad")}
-                                type="text"
+                                type="number"
                                 placeholder="Cantidad del Producto"
                                 isInvalid={errorsDetalle.cantidad}
                             />
@@ -535,11 +544,12 @@ const CompraProductos = ({ }) => {
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                                 <td>{convertidorProveedor(factura.proveedor_id)}</td>
-                                                <td >{(factura.fecha)}</td>
+                                                <td >{formatearFecha(factura.fecha)}</td>
                                                 <td >{(factura.pagado)}</td>
                                                 <td >{(factura.precio_total)}</td>
-                                                <td >{(factura.iva_total5)} %</td>
-                                                <td >{(factura.iva_total10)}</td>
+                                                <td >{factura.iva_total5 === 0 ? "-" : formatearDecimales(factura.iva_total5, 4)}</td>
+                                                <td >{factura.iva_total10 === 0 ? "-" : formatearDecimales(factura.iva_total10, 4)}</td>
+
 
                                                 <td>
                                                     <div className="flex gap-2 ">
@@ -558,8 +568,8 @@ const CompraProductos = ({ }) => {
                                             <td >{formatearFecha(factura.fecha)}</td>
                                             <td >{(factura.pagado)}</td>
                                             <td >{(factura.precio_total)}</td>
-                                            <td >{formatearDecimales(factura.iva_total5, 4)} %</td>
-                                            <td >{formatearDecimales(factura.iva_total10, 4)}</td>
+                                            <td >{factura.iva_total5 === 0 ? "-" : formatearDecimales(factura.iva_total5, 4)}</td>
+                                            <td >{factura.iva_total10 === 0 ? "-" : formatearDecimales(factura.iva_total10, 4)}</td>
 
                                             <td>
                                                 <Button size="sm" variant="link" onClick={() => handleSetEditar(factura.id)}>
