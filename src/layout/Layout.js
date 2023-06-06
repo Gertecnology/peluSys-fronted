@@ -40,13 +40,13 @@ const Layout = ({ children, pagina }) => {
 
   if (!mostarContenido)
     return (
-      <div class="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen">
         <Bars
           height="100"
           width="100"
           color="blue"
           ariaLabel="bars-loading"
-          wrapperStyle={{}}
+          wrapperStyle={{}}citas
           wrapperClass="text-center justify-center"
           visible={true}
         />
