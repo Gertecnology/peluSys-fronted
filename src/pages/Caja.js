@@ -25,6 +25,8 @@ const Caja = () => {
     const [rucCliente, setRucCliente] = useState("");
     const [urlPhoto, setUrlPhoto] = useState("")
     const [mensaje, setMensaje] = useState("");
+    const [searchValue, setSearchValue] = useState("");
+    const [cantidad, setCantidad] = useState('');
 
     const [clientes, setClientes] = useState([]);
     const [cajas, setCajas] = useState([]);
@@ -32,6 +34,7 @@ const Caja = () => {
     const [empleados, setEmpleados] = useState([]);
     const [productos, setProductos] = useState([]);
     const [carrito, setCarrito] = useState([]);
+    const [productosFiltrados, setProductosFiltrados] = useState([]);
 
 
     const [isBuscar, setIsBuscar] = useState(false);
@@ -199,6 +202,60 @@ const Caja = () => {
         setNombreCliente(datoCliente?.nombre);
     }
 
+    const handleInputChange = (event) => {
+        const value = event.target.value;
+        setSearchValue(value);
+
+        // Filtra los elementos basado en el valor de búsqueda
+        const filtrarProducto = productos.filter((producto) => producto.nombre.toLowerCase().includes(value.toLowerCase()));
+        setProductosFiltrados(filtrarProducto);
+    };
+
+    const handleClickRow = (id) => {
+        const producto = productos.find(p => p.id === id);
+        setSearchValue(producto?.nombre);
+        setProductosFiltrados([]);
+        console.log(id);
+    }
+    const calcularSubtotal = (precio, cantidad) => {
+        return precio * cantidad;
+
+    }
+
+    const agregarAlCarrito = () => {
+        const productoAgregar = productos.find(p => p.nombre.toLowerCase().includes(searchValue.toLowerCase()));
+
+        const detalleCarrito = {
+            id: productoAgregar.id,
+            nombre: productoAgregar.nombre,
+            cantidad: Number(cantidad),
+            precioUnitario: productoAgregar.precioVenta,
+            subtotal: calcularSubtotal(productoAgregar.precioVenta, cantidad),
+
+        }
+        handleAgregarDetalle(detalleCarrito);
+    }
+
+    const handleAgregarDetalle = (detalle) => {
+        console.log(detalle)
+        if (detalle.cantidad > 0) {
+            const productoExistente = carrito.find(
+                (item) => item.id === detalle.id
+            );
+
+            if (productoExistente) {
+                // Si el producto ya existe, incrementar la cantidad
+                productoExistente.cantidad += Number(detalle.cantidad);
+                setCarrito([...carrito]);
+            } else {
+                // Si el producto no existe, agregarlo al arreglo
+                setCarrito([...carrito, detalle]);
+            }
+        };
+        setSearchValue("");
+        setCantidad("");
+    }
+
     return (
         <Layout pagina={"Caja"} titulo={"CRUD Caja"} ruta={ruta.pathname}>
             <div className="block">
@@ -241,31 +298,46 @@ const Caja = () => {
                         </div>
                     </div>
                 </div>
-                <div className="flex pl-12 mt-5 w-1/2 gap-3">
-                    <div className="w-3/4">
-                        <Form.Control
-                            placeholder="Producto"
+                <div className="flex flex-col pl-12 mt-5 gap-3 w-6/7">
 
-                            disabled={!areComponentsEnabled}
-                        />
+                    <div className="flex w-1/2 gap-3">
+                        <div className="w-3/4">
+                            <Form.Control
+                                placeholder="Producto"
+                                disabled={!areComponentsEnabled}
+                                value={searchValue}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                        <div className="w-2/4">
+                            <Form.Control
+                                placeholder="Cantidad"
+                                disabled={!areComponentsEnabled}
+                                value={cantidad}
+                                onChange={(e) => setCantidad(e.target.value)}
+                            />
+                        </div>
+                        <div className="w-1/4">
+                            <Button variant="success" onClick={() => agregarAlCarrito()} disabled={!areComponentsEnabled}>
+                                +
+                            </Button>
+                        </div>
                     </div>
-                    <div className="w-2/4">
-                        <Form.Control
-                            placeholder="Cantidad"
+                    <div className="fixed my-11 shadow z-50 bg-white w-80">
+                        {searchValue && productosFiltrados.length > 0 && (
+                            <ul>
+                                {productosFiltrados.map((producto) => (
+                                    <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickRow(producto.id)} key={producto.id}>{producto.nombre}</li>
+                                ))}
+                            </ul>
+                        )}
 
-                            disabled={!areComponentsEnabled}
-                        />
-                    </div>
-                    <div className="w-1/4">
-                        <Button variant="success" disabled={!areComponentsEnabled}>
-                            +
-                        </Button>
                     </div>
                 </div>
                 <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
                     <div className="w-full overflow-x-auto">
                         <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
-                            <thead className="bg-blue-800">
+                            <thead className="sticky top-0 bg-blue-800">
                                 <tr>
                                     <th scope="col" className="px-6 py-4 font-medium text-white">Producto</th>
                                     <th scope="col" className="px-6 py-4 font-medium text-white">Cantidad</th>
@@ -274,17 +346,15 @@ const Caja = () => {
                                     <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 overflow-y-auto">
                                 {(carrito?.map((item, index) => (
                                     <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{item.numero_factura}</td>
-                                        <td >{formatearCliente(item.cliente_id)}</td>
-                                        <td >{item.ruc}</td>
-                                        <td >{item.fecha}</td>
-                                        <td>{item.pagado}</td>
-                                        <td className="text-center">{item.precio_total}</td>
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{item.nombre}</td>
+                                        <td >{item.cantidad}</td>
+                                        <td >{item.precioUnitario}</td>
+                                        <td>{item.subtotal}</td>
                                         <td className="flex justify-center items-center">
-                                            <Button size="sm" variant="link" onClick={() => handleSetDelete(producto.id)}>
+                                            <Button size="sm" variant="link" onClick={() => handleSetDelete(item.id)}>
                                                 <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>
