@@ -12,6 +12,7 @@ import MarcaApi from "./api/MarcaApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Proveedor from "./Proveedor";
 
 
 const PAGE_SIZE = 10;
@@ -42,7 +43,6 @@ const Producto = ({ }) => {
     const [productoEditar, setProductoEditar] = useState(undefined);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState([]);
-    const [marcaSeleccionada, setMarcaSeleccionada] = useState([]);
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -61,6 +61,7 @@ const Producto = ({ }) => {
         obtenerProductos();
         obtenerProveedores();
         obtenerMarcas();
+        console.log(productos)
     }, [user]);
 
 
@@ -173,19 +174,12 @@ const Producto = ({ }) => {
         const api = `${process.env.API_URL}api/producto/guardar`;
         axios.post(
             api,
-            {
-                nombre: data.nombre,
-                detalle: data.detalle,
-                precioVenta: data.precioVenta,
-                precioCompra: data.precioCompra,
-                tipo_iva: data.iva,
-                id_marca: data.marca,
-                id_proveedor: data.proveedor,
-            },
+            data,
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then((response) => {
                 toast.success('Producto Agregado');
+                console.log(response.data);
             })
             .catch((error) => {
                 toast.error('No se pudo agregar el producto!"');
@@ -201,30 +195,42 @@ const Producto = ({ }) => {
 
     const handleSetEditar = (id) => {
 
-        const producto = productos.find(p => p.id === id);
-        setMarcaSeleccionada(marcas?.find(m => m.id === producto.id_marca));
+        const producto = productos?.find(p => p.id === id);
+        const marca = marcas?.find(m => m.id === producto.id_marca);
+        const proveedor = proveedores?.find(p => p.id === producto.id_proveedor);
         setProductoEditar(producto);
         handleModal();
         setIsEditar(true);
-        Object.keys(getValues()).forEach(key => setValue(key, producto[key]));
+        setValue("nombre", producto.nombre);
+        setValue("marca", marca.id);
+        setValue("proveedor", proveedor.id);
+        setValue("precioVenta", producto.precioVenta);
+        setValue("precioCompra", producto.precioCompra);
+        setValue("detalle", producto.detalle);
+        setValue("iva", producto.tipo_iva);
     }
 
     const handleEditar = (data) => {
+        console.log(data)
         handleModal();
-        const api = `${process.env.API_URL}/productos/actulizar/${productoEditar.id}`;
+        const api = `${process.env.API_URL}api/producto/actualizar/${productoEditar.id}`;
         axios.post(api, {
             id: productoEditar.id,
-            ...data
+           ...data,
         },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then((response) => {
+                console.log(response.data)
                 toast.success('Producto Actualizado');
                 obtenerProductos();
+                reset();
             })
             .catch((error) => {
-                console.log(error)
+                console.log(error.response.data)
                 toast.error('No se pudo actualizar!"');
+                reset();
+
             })
             .finally(() => {
                 setProductoEditar(undefined);
@@ -376,7 +382,7 @@ const Producto = ({ }) => {
                             <Form.Label>Marca</Form.Label>
 
                             <div className="flex gap-2">
-                                <Form.Select {...register("marca", { required: true })}
+                                <Form.Select {...register("id_marca", { required: true })}
 
                                 >
                                     <option defaultValue="" disabled selected hidden>Selecciona una opción</option>
@@ -432,7 +438,7 @@ const Producto = ({ }) => {
                         <Form.Group>
                             <Form.Label>Proveedor</Form.Label>
                             <div className="flex gap-2">
-                                <Form.Select {...register("proveedor", { required: true })}
+                                <Form.Select {...register("id_proveedor", { required: true })}
                                 >
                                     <option value="" disabled selected hidden>Seleccione un Proveedor</option>
                                     {proveedores?.map((proveedor) => (
@@ -447,7 +453,7 @@ const Producto = ({ }) => {
 
                         <Form.Group>
                             <Form.Label>IVA</Form.Label>
-                            <Form.Select {...register("iva", { required: true })}
+                            <Form.Select {...register("tipo_iva", { required: true })}
                             >
                                 <option defaultValue="" disabled selected hidden>IVA</option>
 
@@ -697,7 +703,7 @@ const Producto = ({ }) => {
                         <Form.Group>
                             <Form.Label>Timbrado</Form.Label>
                             <Form.Control
-                                {...register("timbrado", {
+                                {...registerForm2("timbrado", {
                                     required: true
                                 })}
                                 type="text"

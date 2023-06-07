@@ -35,6 +35,7 @@ const Proveedor = ({ }) => {
 
     useEffect(() => {
         obtenerProveedores();
+        console.log(proveedores);
     }, [])
 
 
@@ -68,11 +69,12 @@ const Proveedor = ({ }) => {
                     // Realizar algo con los datos obtenidos
                     setProveedores(datos?.content);
                     setTotalPages(datos?.totalPages);
+                    console.log(proveedores);
 
                 })
                 .catch((error) => {
                     // Manejar el error
-                    console.error("Error al obtener los datos:", error);
+                    console.error("Error al obtener los proveedores:", error);
                 });
         }
     }
@@ -250,6 +252,18 @@ const Proveedor = ({ }) => {
                                 type="text"
                                 placeholder="Direccion del Proveedor"
                                 isInvalid={errors.direccion}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>E-mail</Form.Label>
+                            <Form.Control
+                                {...register("email", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="E-mail del Proveedor"
+                                isInvalid={errors.email}
                             />
                         </Form.Group>
 

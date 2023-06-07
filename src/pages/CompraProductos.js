@@ -63,7 +63,6 @@ const CompraProductos = ({ }) => {
     const [productosAgregar, setProductosAgregar] = useState([]);
     const [valor, setValor] = useState("");
     const [valorFiltro, setValorFiltro] = useState("");
-    const [detalles, setDetalles] = useState([]); // Estado para almacenar los detalles de la factura
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -230,17 +229,20 @@ const CompraProductos = ({ }) => {
     }
 
     const formSubmit = (data) => {
+        console.log(productosAgregar)
+        console.log(data)
         handleModal();
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
-
+        const json = {
+            proveedorId: Number(data.proveedorId),
+            numeroFactura: data.factura,
+            pagado: data.estado,
+            detalles: productosAgregar
+        }
+        console.log(json)
         axios.post(
             api,
-            {
-                proveedorId: Number(data.proveedorId),
-                numeroFactura: data.factura,
-                pagado: data.estado,
-                detalles: productosAgregar
-            },
+            json,
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then((response) => {
@@ -256,6 +258,8 @@ const CompraProductos = ({ }) => {
             .finally(() => {
                 obtenerFacturas();
                 reset();
+                resetDetalle();
+                setProductosAgregar([]);
             })
 
 
@@ -267,7 +271,6 @@ const CompraProductos = ({ }) => {
         const factura = facturas.find(s => s.id === id);
         setFacturaEditar(factura);
         const proveedor = proveedores?.find(p => p.id === factura.proveedor_id);
-        console.log(facturaEditar)
         setValue("factura", factura.numero_factura);
         setValue("proveedorId", proveedor.id);
         setValue("estado", factura.pagado);
@@ -278,17 +281,17 @@ const CompraProductos = ({ }) => {
 
 
     const handleEditar = (data) => {
+        console.log(facturaEditar)
         handleModal();
-        const api = `${process.env.API_URL}api/factura/actualizar/${facturaEditar.id}`;
+        const api = `${process.env.API_URL}api/proveedores/actualizarCompra/${facturaEditar.id}`;
+        const json = {
+            data,
+            detalles: productosAgregar
+        }
+        console.log(json)
         axios.post(api, {
             id: facturaEditar.id,
-            data: {
-
-                proveedorId: Number(data.proveedorId),
-                numeroFactura: data.factura,
-                pagado: data.estado,
-                detalles: productosAgregar
-            }
+            json,
         },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
@@ -299,6 +302,7 @@ const CompraProductos = ({ }) => {
 
             })
             .catch((error) => {
+                console.log(error)
                 toast.error('No se pudo actualizar la Factura!!!"');
 
             })

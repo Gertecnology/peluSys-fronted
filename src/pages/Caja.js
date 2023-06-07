@@ -3,96 +3,70 @@ import { Modal, Button, Form } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from 'next/router'
-import FacturasApi from "@/pages/api/FacturasApi";
 import { AuthContext } from "@/pages/contexts/AuthContext";
 import ClienteApi from "./api/ClienteApi";
 import CajaApi from "./api/CajaApi";
 import EmpleadoApi from "./api/EmpleadoApi";
 import ProductoApi from "./api/ProductoApi";
+import { AiOutlineDelete } from "react-icons/ai"
+import Mensaje from "@/components/Mensaje";
+import axios from "axios";
 
 
-const PAGE_SIZE = 10;
-
-const Caja = ({ }) => {
+const Caja = () => {
     const ruta = useRouter();
 
     const { register, handleSubmit, formState: { errors }, reset, getValues } = useForm();
 
-    const [currentPage, setCurrentPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-
     const { user } = useContext(AuthContext);
 
-    const [valor, setValor] = useState("");
-    const [urlPhoto, setUrlPhoto] = useState("")
 
-    const [facturas, setFacturas] = useState([]);
+    const [nombreCliente, setNombreCliente] = useState("");
+    const [rucCliente, setRucCliente] = useState("");
+    const [urlPhoto, setUrlPhoto] = useState("")
+    const [mensaje, setMensaje] = useState("");
+
     const [clientes, setClientes] = useState([]);
     const [cajas, setCajas] = useState([]);
+    const [cajasDisponibles, setCajasDisponibles] = useState([]);
     const [empleados, setEmpleados] = useState([]);
     const [productos, setProductos] = useState([]);
-    const [facturasFiltradas, setFacturasFiltradas] = useState([]);
-    const [seleccionado, setSeleccionado] = useState([]);
-    const [facturaDetalle, setFacturaDetalle] = useState([]);
-    const [facturaSeleccionadaDetalle, setFacturaSeleccionadaDetalle] = useState([]);
+    const [carrito, setCarrito] = useState([]);
 
 
     const [isBuscar, setIsBuscar] = useState(false);
-    const [cargando, setCargando] = useState(false);
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
     const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(true);
     const handleClose = () => setShowAbrirCajaModal(false);
     const [visible, setVisible] = useState(false);
-    const [showDetalleFacturaModal, setShowDetalleFacturaModal] = useState(false);
-    const handleCloseFacturaDetalleModal = () => setShowDetalleFacturaModal(false);
 
+    const [areComponentsEnabled, setAreComponentsEnabled] = useState(false);
 
-
-    useEffect(() => {
-        obtenerFacturas();
-        obtenerClientes();
-        obtenerCajas();
-        obtenerEmpleados();
-        obtenerProductos();
-        console.log(user)
-    }, [user]);
-
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
+    const handleChangeComponents = () => {
+        setAreComponentsEnabled(!areComponentsEnabled);
     };
 
-    const paginatedFactura = facturas.slice(
-        currentPage * PAGE_SIZE,
-        (currentPage + 1) * PAGE_SIZE
-    );
+    useEffect(() => {
+        obtenerCajas();
+        obtenerCajas();
+        obtenerClientes();
+        obtenerEmpleados();
+        obtenerProductos();
+        console.log(clientes);
+    }, [user]);
+
+
 
 
     useEffect(() => {
-        if (valor.length > 3) {
-            handleFiltrar(valor)
+        if (rucCliente.length > 6) {
+            filtrarCliente(rucCliente)
         }
         else {
-            actualizar();
+            setNombreCliente("");
         }
-    }, [valor])
+    }, [rucCliente])
 
-    const obtenerFacturas = () => {
-        if (user && user.token) {
-            const facturaApi = new FacturasApi(user.token);
-
-            facturaApi.getFacturas()
-                .then((datos) => {
-                    // Realizar algo con los datos obtenidos
-                    setFacturas(datos.content);
-                    setTotalPages(datos.totalPages);
-                    setUrlPhoto(user?.urlPhoto)
-                })
-                .catch((error) => {
-                    // Manejar el error
-                    console.error("Error al obtener los datos:", error);
-                });
-        }
-    }
 
 
     const obtenerClientes = () => {
@@ -119,6 +93,8 @@ const Caja = ({ }) => {
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
                 setCajas(datos);
+                const filtrarCajasDisponibles = cajas?.filter(caja => caja.estado === "CERRADO")
+                setCajasDisponibles(filtrarCajasDisponibles)
             })
             .catch((error) => {
                 // Manejar el error
@@ -161,9 +137,6 @@ const Caja = ({ }) => {
 
     }
 
-    const actualizar = () => {
-        valor === "" ? setIsBuscar(false) : null;
-    }
 
     const formatearCliente = (id) => {
         const cliente = clientes?.find(cliente => cliente.id === id);
@@ -171,71 +144,49 @@ const Caja = ({ }) => {
     }
 
     const formatearProducto = (id) => {
-        console.log(productos);
         const producto = productos.find(producto => producto.id === id);
-        //console.log(producto);
-    }
-
-
-
-    const handleCheckboxChange = (i) => {
-        setShowDetalleFacturaModal(false);
-
-        if (seleccionado.includes(i)) {
-            setSeleccionado(seleccionado.filter((id) => id !== i));
-        } else {
-            setSeleccionado([...seleccionado, i]);
-        }
-    };
-
-    const facturaSeleccionada = (id) => {
-        console.log(id);
     }
 
 
     const handleAbrirCajaModal = () => {
         setShowAbrirCajaModal(true);
-        setIsCheckboxDisabled(!isCheckboxDisabled);
-        setVisible(!visible);
+
     }
 
     const formAbrirCaja = (data) => {
-        if (getValues("monto") !== 0) {
-            alert("El monto de apertura debe ser mayor a 0");
-        } else {
-            console.log("paso")
+        if (getValues("monto") <= 0) {
+            setMensaje("Monto no valido!!");
+            return;
         }
+        setMensaje("");
+        console.log(data)
+        const api = `${process.env.API_URL}api/cajas/aperturas`;
+        axios.post(
+            api,
+            {
+                cajaId: Number(data.cajaId),
+                monto: Number(data.monto),
+                empleadoId: Number(user.empleado_id)
 
-    }
-
-
-    const handleFiltrar = (filtro) => {
-        setCargando(true);
-        setIsBuscar(true);
-        const facturaApi = new FacturasApi(user.token);
-        facturaApi.filterFacturas(filtro)
-            .then((datos) => {
-                // Realizar algo con los datos obtenidos
-                setFacturasFiltradas(datos);
+            },
+            { headers: { "Authorization": `Bearer ${user.token}` } }
+        )
+            .then((response) => {
+                setIsCheckboxDisabled(!isCheckboxDisabled);
+                setVisible(!visible);
+                handleChangeComponents();
+                handleClose();
             })
             .catch((error) => {
-                // Manejar el error
-                console.error("Error al obtener los datos:", error);
-            });
-
-        setTimeout(() => {
-            setCargando(false);
-        }, 500);
+                reset();
+            })
+            .finally(() => {
+                reset();
+            })
     }
 
 
-    const handleRowClick = (id) => {
-        const factura = facturas.find(f => f.id === id);
-        setFacturaDetalle(factura);
-        setFacturaSeleccionadaDetalle(factura.detalles);
-        setShowDetalleFacturaModal(true);
 
-    }
 
     const formatearEmpleado = (id) => {
         const empleado = empleados?.find(empleado => empleado.id === id);
@@ -243,19 +194,36 @@ const Caja = ({ }) => {
     }
 
 
+    const filtrarCliente = (valor) => {
+        const datoCliente = clientes.find(cliente => cliente?.ruc === valor);
+        setNombreCliente(datoCliente?.nombre);
+    }
+
     return (
         <Layout pagina={"Caja"} titulo={"CRUD Caja"} ruta={ruta.pathname}>
             <div className="block">
                 <div className="flex items-center">
-                    <div className="px-5 w-3/4 flex items-center">
-                        <Form.Control
-                            placeholder="Has tu busqueda aquí"
-                            value={valor}
-                            onChange={e => setValor(e.target.value)}
-                        />
+                    <div className="px-5 w-3/4 flex items-center gap-3">
+                        <div className="1/4">
+                            <Form.Label>Cliente:</Form.Label>
+                            <Form.Control
+                                placeholder="Cliente"
+                                value={nombreCliente}
+                                onChange={e => setNombreCliente(e.target.value)}
+                                disabled={true}
+
+                            />
+                        </div>
+                        <div className="1/4">
+                            <Form.Label>RUC:</Form.Label>
+                            <Form.Control
+                                placeholder="RUC"
+                                value={rucCliente}
+                                onChange={e => setRucCliente(e.target.value)}
+                                disabled={!areComponentsEnabled}
+                            />
+                        </div>
                     </div>
-
-
                     <div className="w-1/4">
                         <div className="flex justify-center gap-3">
                             <button
@@ -272,116 +240,62 @@ const Caja = ({ }) => {
                             </button>
                         </div>
                     </div>
-
                 </div>
+                <div className="flex pl-12 mt-5 w-1/2 gap-3">
+                    <div className="w-3/4">
+                        <Form.Control
+                            placeholder="Producto"
 
-                {cargando ? (<div class="sk-circle">
-                    <div class="sk-circle1 sk-child"></div>
-                    <div class="sk-circle2 sk-child"></div>
-                    <div class="sk-circle3 sk-child"></div>
-                    <div class="sk-circle4 sk-child"></div>
-                    <div class="sk-circle5 sk-child"></div>
-                    <div class="sk-circle6 sk-child"></div>
-                    <div class="sk-circle7 sk-child"></div>
-                    <div class="sk-circle8 sk-child"></div>
-                    <div class="sk-circle9 sk-child"></div>
-                    <div class="sk-circle10 sk-child"></div>
-                    <div class="sk-circle11 sk-child"></div>
-                    <div class="sk-circle12 sk-child"></div>
-                </div>) : (
-                    <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
-                        <div className="w-full overflow-x-auto">
-                            <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
-                                <thead className="bg-blue-800">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Nro. Factura</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Cliente</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">RUC</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Fecha</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Estado</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white">Total</th>
-                                        <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Seleccionar</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {isBuscar ? (
-                                        facturasFiltradas?.map((factura, index) => (
-                                            <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                                <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                                <td >{formatearCliente(factura.cliente_id)}</td>
-                                                <td >{factura.ruc}</td>
-                                                <td >{factura.fecha}</td>
-                                                <td>{factura.pagado}</td>
-                                                <td>{factura.precio_total}</td>
-
-                                                <td className="flex justify-center items-center" onClick={() => setShowDetalleFacturaModal(false)}>
-                                                    <input
-                                                        checked={seleccionado.includes(factura.id)}
-                                                        disabled={isCheckboxDisabled}
-                                                        onChange={() => { facturaSeleccionada(factura.id), handleCheckboxChange(factura.id) }}
-                                                        type="checkbox"
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (paginatedFactura.map((factura, index) => (
-                                        <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer" onClick={() => { handleRowClick(factura.id) }}>
-                                            <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                            <td >{formatearCliente(factura.cliente_id)}</td>
-                                            <td >{factura.ruc}</td>
-                                            <td >{factura.fecha}</td>
-                                            <td>{factura.pagado}</td>
-                                            <td className="text-center">{factura.precio_total}</td>
-
-                                            <td className="flex justify-center items-center" onClick={() => setShowDetalleFacturaModal(false)}>
-                                                <input
-                                                    checked={seleccionado.includes(factura.id)}
-                                                    disabled={isCheckboxDisabled}
-                                                    onChange={() => { facturaSeleccionada(factura.id), handleCheckboxChange(factura.id) }}
-                                                    type="checkbox"
-                                                />
-
-                                            </td>
-                                        </tr>
-                                    )))}
-                                </tbody>
-                            </table>
-                        </div>
+                            disabled={!areComponentsEnabled}
+                        />
                     </div>
-                )}
-                {/* Paginación */}
-                <div className="flex justify-center mt-5">
-                    <nav className="inline-flex rounded-md shadow">
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 0}
-                            className="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                        >
-                            Anterior
-                        </button>
-                        {Array.from({ length: totalPages }, (_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handlePageChange(index)}
-                                className={`px-3 py-2 border-t border-b border-gray-300 bg-white text-sm font-medium ${currentPage === index
-                                    ? "text-blue-600 hover:text-blue-700"
-                                    : "text-gray-500 hover:bg-gray-50"
-                                    }`}
-                            >
-                                {index + 1}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages - 1}
-                            className="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                        >
-                            Siguiente
-                        </button>
-                    </nav>
+                    <div className="w-2/4">
+                        <Form.Control
+                            placeholder="Cantidad"
+
+                            disabled={!areComponentsEnabled}
+                        />
+                    </div>
+                    <div className="w-1/4">
+                        <Button variant="success" disabled={!areComponentsEnabled}>
+                            +
+                        </Button>
+                    </div>
+                </div>
+                <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
+                            <thead className="bg-blue-800">
+                                <tr>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white">Producto</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white">Cantidad</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white">Precio unitario</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white">Subtotal</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {(carrito?.map((item, index) => (
+                                    <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{item.numero_factura}</td>
+                                        <td >{formatearCliente(item.cliente_id)}</td>
+                                        <td >{item.ruc}</td>
+                                        <td >{item.fecha}</td>
+                                        <td>{item.pagado}</td>
+                                        <td className="text-center">{item.precio_total}</td>
+                                        <td className="flex justify-center items-center">
+                                            <Button size="sm" variant="link" onClick={() => handleSetDelete(producto.id)}>
+                                                <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                )))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-
             {/*Modal para abrir caja*/}
             <Modal show={showAbrirCajaModal} onHide={handleClose} centered>
                 <Form
@@ -393,29 +307,37 @@ const Caja = ({ }) => {
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+                        {mensaje && <Mensaje tipo="error">{mensaje}</Mensaje>}
                         <div className="flex justify-between">
                             <div className="flex-col">
                                 <p>
                                     <span className="font-bold">Cajero:</span> {user?.username} {" "} {formatearEmpleado(user?.empleado_id)}
                                 </p>
                                 <p>
-
                                 </p>
-
                             </div>
                             <div>
                                 <img
+                                    alt={`Foto de perfil ${user?.username}`}
                                     src={urlPhoto}
-                                    className="object-cover btn- h-9 w-9 rounded-full mr-2 bg-gray-300" alt="" />
-
+                                    width="500"
+                                    height="400"
+                                    className="object-cover btn- h-9 w-9 rounded-full mr-2 bg-gray-300" />
                             </div>
-
                         </div>
-
-
-
                         <Form.Group>
-                            <Form.Label>Monto de Apertura de Caja</Form.Label>
+                            <Form.Label>Numero Caja</Form.Label>
+                            <Form.Select {...register("cajaId", { required: true })}
+                            >
+                                <option defaultValue="" disabled selected hidden>Seleccione una Caja</option>
+
+                                {cajasDisponibles?.map((caja) => (
+                                    <option key={caja.id} value={caja.id}>{caja.detalle}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label className="font-bold">Monto de Apertura de Caja</Form.Label>
                             <Form.Control
                                 {...register("monto", {
                                     required: true
@@ -425,110 +347,14 @@ const Caja = ({ }) => {
                                 isInvalid={errors.monto}
                             />
                         </Form.Group>
-
                     </Modal.Body>
                     <Modal.Footer>
-
                         <Button variant="primary" type="submit">
                             Abrir
                         </Button>
                     </Modal.Footer>
                 </Form>
             </Modal>
-
-
-            {/*Modal para ver los detalles de las facturas*/}
-            <Modal show={showDetalleFacturaModal} onHide={handleCloseFacturaDetalleModal}>
-
-                <Modal.Header closeButton>
-                    <Modal.Title>Detalles de Factura - Cliente {formatearCliente(facturaDetalle.cliente_id)}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <div className="flex flex-col">
-
-                        {/*cabecera*/}
-                        <div className="flex border-b-2 border-gray-400">
-
-                            <div className="w-3/4 border-r-2 border-gray-400  ">
-
-                                <h6>
-                                    Lista de detalles de factura
-                                </h6>
-
-                            </div>
-
-                            <div className="w-1/4 border-r-2 border-gray-400 ">
-
-                                <h6 className="text-center">
-                                    Cantidad
-                                </h6>
-
-                            </div>
-
-
-
-                            <div className="w-1/4">
-
-                                <h6 className="text-center">
-                                    Subtotal
-                                </h6>
-                            </div>
-
-                        </div>
-
-
-                        {/*Cuerpo */}
-
-                        {facturaSeleccionadaDetalle?.map(factura => (
-                            <div key={factura.id} className="flex ">
-
-                                <div className="w-3/4 border-r-2 border-gray-400">
-
-                                    <p>
-                                        {formatearProducto(factura.producto_id)}
-                                    </p>
-
-                                </div>
-
-                                <div className="w-1/4 border-r-2 border-gray-400">
-
-                                    <p className="text-center">
-                                        {factura.cantidad}
-                                    </p>
-
-                                </div>
-
-
-
-                                <div className="w-1/4">
-
-                                    <p className="text-center">
-                                        {factura.precio_unitario} Gs.
-                                    </p>
-                                </div>
-
-                            </div>
-                        ))}
-
-
-                        <div className="flex items-center border-t-2 border-b-2 border-gray-400">
-                            <div className="w-3/4">
-                                <p className="font-bold">Total a Pagar:</p>
-                            </div>
-                            <div className="w-1/4 ">
-                                <p className="text-center">{facturaDetalle.precio_total} Gs.</p>
-                            </div>
-
-
-
-                        </div>
-
-                    </div>
-
-                </Modal.Body>
-            </Modal>
-
-
         </Layout>
     );
 };

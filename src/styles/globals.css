@@ -209,8 +209,17 @@ main {
   background-color: white;
 }
 
-.scrollable-table-container tbody td {
-  /* Estilos adicionales para las celdas del cuerpo de la tabla */
+.alerta {
+  width: 100%;
+  margin: 1rem auto 1rem auto;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: medium;
+  text-align: center;
 }
 
-
+.alerta.error {
+  background-color: white;
+  border-left: 5px solid #b91c1c;
+  color: #b91c1c;
+}
