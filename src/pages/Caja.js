@@ -9,14 +9,18 @@ import CajaApi from "./api/CajaApi";
 import EmpleadoApi from "./api/EmpleadoApi";
 import ProductoApi from "./api/ProductoApi";
 import { AiOutlineDelete } from "react-icons/ai"
+import { AiOutlineUserAdd } from "react-icons/ai";
 import Mensaje from "@/components/Mensaje";
+import { toast } from "react-toastify";
 import axios from "axios";
 
 
 const Caja = () => {
     const ruta = useRouter();
+    const form2 = useForm();
 
     const { register, handleSubmit, formState: { errors }, reset, getValues } = useForm();
+    const { register: registerCliente, handleSubmit: handleSubmitCliente, formState: { errors: errorsCliente }, reset: resetCliente, getValues: getValuesCliente } = form2;
 
     const { user } = useContext(AuthContext);
 
@@ -25,7 +29,8 @@ const Caja = () => {
     const [rucCliente, setRucCliente] = useState("");
     const [urlPhoto, setUrlPhoto] = useState("")
     const [mensaje, setMensaje] = useState("");
-    const [searchValue, setSearchValue] = useState("");
+    const [productosSearchValue, setProductosSearchValue] = useState("");
+    const [clientesSearchValue, setClientesSearchValue] = useState("");
     const [cantidad, setCantidad] = useState('');
 
     const [clientes, setClientes] = useState([]);
@@ -35,15 +40,15 @@ const Caja = () => {
     const [productos, setProductos] = useState([]);
     const [carrito, setCarrito] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
+    const [clientesFiltrados, setClientesFiltrados] = useState([]);
 
 
-    const [isBuscar, setIsBuscar] = useState(false);
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
     const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(true);
     const handleClose = () => setShowAbrirCajaModal(false);
     const [visible, setVisible] = useState(false);
-
     const [areComponentsEnabled, setAreComponentsEnabled] = useState(false);
+    const [showAddClienteModal, setShowAddClienteModal] = useState(false);
 
     const handleChangeComponents = () => {
         setAreComponentsEnabled(!areComponentsEnabled);
@@ -70,7 +75,11 @@ const Caja = () => {
         }
     }, [rucCliente])
 
+    const handleClienteModal = () => {
+        Object.keys(getValuesCliente()).forEach(key => setClientesSearchValue(key, ""))
+        setShowAddClienteModal(!showAddClienteModal);
 
+    };
 
     const obtenerClientes = () => {
 
@@ -140,17 +149,6 @@ const Caja = () => {
 
     }
 
-
-    const formatearCliente = (id) => {
-        const cliente = clientes?.find(cliente => cliente.id === id);
-        return cliente?.nombre;
-    }
-
-    const formatearProducto = (id) => {
-        const producto = productos.find(producto => producto.id === id);
-    }
-
-
     const handleAbrirCajaModal = () => {
         setShowAbrirCajaModal(true);
 
@@ -188,6 +186,36 @@ const Caja = () => {
             })
     }
 
+    const formClienteSubmit = (data) => {
+        if (!user) return
+        const api = `${process.env.API_URL}api/clientes/guardar/`;
+        const token = user.accessToken
+        handleClienteModal();
+        axios.post(
+            api,
+            {
+
+                nombre: data.nombre,
+                ruc: data.ruc,
+                direccion: data.direccion,
+                telefono: data.telefono,
+                credito: 0,
+                credito_maximo: 0,
+                linkFotoPerfil: null,
+                email: data.email
+            },
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                toast.success('Cliente Agregado');
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error('No se pudo agregar!"');
+            });
+
+    }
+
 
 
 
@@ -202,28 +230,41 @@ const Caja = () => {
         setNombreCliente(datoCliente?.nombre);
     }
 
-    const handleInputChange = (event) => {
+    const handleInputProductoChange = (event) => {
         const value = event.target.value;
-        setSearchValue(value);
-
+        setProductosSearchValue(value);
         // Filtra los elementos basado en el valor de búsqueda
         const filtrarProducto = productos.filter((producto) => producto.nombre.toLowerCase().includes(value.toLowerCase()));
         setProductosFiltrados(filtrarProducto);
     };
 
+    const handleInputClienteChange = (event) => {
+        const value = event.target.value;
+        setClientesSearchValue(value);
+        // Filtra los elementos basado en el valor de búsqueda
+        const filtrarCliente = clientes.filter((cliente) => cliente.nombre.toLowerCase().includes(value.toLowerCase()));
+        setClientesFiltrados(filtrarCliente);
+    };
+
+    const handleClickClienteRow = (id) => {
+        const cliente = clientes.find(c => c.id === id);
+        setClientesSearchValue(cliente?.nombre);
+        setClientesFiltrados([]);
+    }
+
     const handleClickRow = (id) => {
         const producto = productos.find(p => p.id === id);
-        setSearchValue(producto?.nombre);
+        setProductosSearchValue(producto?.nombre);
         setProductosFiltrados([]);
-        console.log(id);
     }
+
     const calcularSubtotal = (precio, cantidad) => {
         return precio * cantidad;
 
     }
 
     const agregarAlCarrito = () => {
-        const productoAgregar = productos.find(p => p.nombre.toLowerCase().includes(searchValue.toLowerCase()));
+        const productoAgregar = productos.find(p => p.nombre.toLowerCase().includes(productosSearchValue.toLowerCase()));
 
         const detalleCarrito = {
             id: productoAgregar.id,
@@ -252,7 +293,7 @@ const Caja = () => {
                 setCarrito([...carrito, detalle]);
             }
         };
-        setSearchValue("");
+        setProductosSearchValue("");
         setCantidad("");
     }
 
@@ -260,25 +301,47 @@ const Caja = () => {
         <Layout pagina={"Caja"} titulo={"CRUD Caja"} ruta={ruta.pathname}>
             <div className="block">
                 <div className="flex items-center">
-                    <div className="px-5 w-3/4 flex items-center gap-3">
-                        <div className="1/4">
-                            <Form.Label>Cliente:</Form.Label>
-                            <Form.Control
-                                placeholder="Cliente"
-                                value={nombreCliente}
-                                onChange={e => setNombreCliente(e.target.value)}
-                                disabled={true}
+                    <div className="px-5 w-3/4 flex flex-col">
 
-                            />
+                        <div className="flex items-center w-1/2 gap-2">
+
+                            <div className="w-3/4">
+                                <Form.Label>Cliente:</Form.Label>
+                                <Form.Control
+                                    placeholder="Cliente"
+                                    value={clientesSearchValue}
+                                    onChange={handleInputClienteChange}
+                                    disabled={!areComponentsEnabled}
+                                />
+                            </div>
+                            <div className="w-2/4">
+                                <Form.Label>RUC:</Form.Label>
+                                <Form.Control
+                                    placeholder="RUC"
+                                    value={rucCliente}
+                                    onChange={e => setRucCliente(e.target.value)}
+                                    disabled={!areComponentsEnabled}
+                                />
+                            </div>
+                            <div className="w-1/4 pt-8">
+                                <Button variant="link" onClick={() => handleClienteModal()} disabled={!areComponentsEnabled}>
+                                    <AiOutlineUserAdd color="#808080" size="35px" onMouseOver={({ target }) => target.style.color = "green"}
+                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="1/4">
-                            <Form.Label>RUC:</Form.Label>
-                            <Form.Control
-                                placeholder="RUC"
-                                value={rucCliente}
-                                onChange={e => setRucCliente(e.target.value)}
-                                disabled={!areComponentsEnabled}
-                            />
+                        <div className="fixed my-20 shadow z-50 bg-white w-80">
+                            {clientesSearchValue && clientesFiltrados.length > 0 && (
+                                <ul>
+                                    {clientesFiltrados.map((cliente) => (
+                                        <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickClienteRow(cliente.id)} key={cliente.id}>{cliente.nombre}</li>
+                                    ))}
+                                </ul>
+                            )}
+
+                        </div>
+                        <div>
+
                         </div>
                     </div>
                     <div className="w-1/4">
@@ -305,8 +368,8 @@ const Caja = () => {
                             <Form.Control
                                 placeholder="Producto"
                                 disabled={!areComponentsEnabled}
-                                value={searchValue}
-                                onChange={handleInputChange}
+                                value={productosSearchValue}
+                                onChange={handleInputProductoChange}
                             />
                         </div>
                         <div className="w-2/4">
@@ -324,7 +387,7 @@ const Caja = () => {
                         </div>
                     </div>
                     <div className="fixed my-11 shadow z-50 bg-white w-80">
-                        {searchValue && productosFiltrados.length > 0 && (
+                        {productosSearchValue && productosFiltrados.length > 0 && (
                             <ul>
                                 {productosFiltrados.map((producto) => (
                                     <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickRow(producto.id)} key={producto.id}>{producto.nombre}</li>
@@ -425,6 +488,92 @@ const Caja = () => {
                     </Modal.Footer>
                 </Form>
             </Modal>
+
+            {/*Registrar nuevo cliente */}
+            <Modal show={showAddClienteModal} onHide={handleClienteModal}>
+                <Form
+                    onSubmit={handleSubmitCliente(formClienteSubmit)}
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>Agregar Cliente</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+
+                        <Form.Group>
+                            <Form.Label>Nombre</Form.Label>
+                            <Form.Control
+                                {...registerCliente("nombre", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Nombre del cliente"
+                                isInvalid={errorsCliente.nombre}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Teléfono</Form.Label>
+                            <Form.Control
+                                {...registerCliente("telefono", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Teléfono"
+                                isInvalid={errorsCliente.telefono}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>RUC</Form.Label>
+                            <Form.Control
+
+                                {...registerCliente("ruc", {
+                                    required: false
+                                })}
+
+                                type="text"
+                                placeholder="RUC"
+                                isInvalid={errorsCliente.ruc}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Dirección</Form.Label>
+                            <Form.Control
+                                {...registerCliente("direccion", {
+                                    required: false
+                                })}
+                                type="text"
+                                placeholder="Dirección"
+                                isInvalid={errorsCliente.direccion}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>E-mail</Form.Label>
+                            <Form.Control
+                                {...registerCliente("email", {
+                                    required: false
+                                })}
+                                type="text"
+                                placeholder="Email"
+                                isInvalid={errorsCliente.email}
+                            />
+                        </Form.Group>
+
+
+
+
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleClienteModal}>
+                            Cerrar
+                        </Button>
+                        <Button variant="primary" type="submit">Guardar</Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
+
         </Layout>
     );
 };
