@@ -10,6 +10,7 @@ import EmpleadoApi from "./api/EmpleadoApi";
 import ProductoApi from "./api/ProductoApi";
 import { AiOutlineDelete } from "react-icons/ai"
 import { AiOutlineUserAdd } from "react-icons/ai";
+import { FiEdit2 } from "react-icons/fi";
 import Mensaje from "@/components/Mensaje";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -31,6 +32,7 @@ const Caja = () => {
     const [mensaje, setMensaje] = useState("");
     const [productosSearchValue, setProductosSearchValue] = useState("");
     const [clientesSearchValue, setClientesSearchValue] = useState("");
+    const [totalPagar, setTotalPagar] = useState("");
     const [cantidad, setCantidad] = useState('');
 
     const [clientes, setClientes] = useState([]);
@@ -49,6 +51,7 @@ const Caja = () => {
     const [visible, setVisible] = useState(false);
     const [areComponentsEnabled, setAreComponentsEnabled] = useState(false);
     const [showAddClienteModal, setShowAddClienteModal] = useState(false);
+    const [isEditar, setIsEditar] = useState(false);
 
     const handleChangeComponents = () => {
         setAreComponentsEnabled(!areComponentsEnabled);
@@ -60,10 +63,12 @@ const Caja = () => {
         obtenerClientes();
         obtenerEmpleados();
         obtenerProductos();
-        console.log(clientes);
     }, [user]);
 
-
+    useEffect(() => {
+        const sumaTotal = carrito.reduce((total, producto) => total + producto.subtotal, 0);
+        setTotalPagar(sumaTotal);
+    }, [carrito])
 
 
     useEffect(() => {
@@ -160,7 +165,6 @@ const Caja = () => {
             return;
         }
         setMensaje("");
-        console.log(data)
         const api = `${process.env.API_URL}api/cajas/aperturas`;
         axios.post(
             api,
@@ -278,23 +282,41 @@ const Caja = () => {
     }
 
     const handleAgregarDetalle = (detalle) => {
-        console.log(detalle)
         if (detalle.cantidad > 0) {
             const productoExistente = carrito.find(
                 (item) => item.id === detalle.id
             );
 
             if (productoExistente) {
+                (isEditar ? (
+                    productoExistente.cantidad = Number(detalle.cantidad)
+                ) : (
+                    productoExistente.cantidad += Number(detalle.cantidad)
+                ))
                 // Si el producto ya existe, incrementar la cantidad
-                productoExistente.cantidad += Number(detalle.cantidad);
+
                 setCarrito([...carrito]);
-            } else {
+            }
+            else {
                 // Si el producto no existe, agregarlo al arreglo
                 setCarrito([...carrito, detalle]);
             }
         };
         setProductosSearchValue("");
         setCantidad("");
+    }
+
+    const handleDeleteProductoCarrito = (id) => {
+        const carritoActualizado = carrito.filter(c => c.id !== id);
+        setCarrito(carritoActualizado);
+    }
+
+    const handleEditProductoCarrito = (id) => {
+        const productoActualizado = carrito.find(c => c.id === id);
+        setIsEditar(true);
+        setProductosSearchValue(productoActualizado?.nombre);
+        setCantidad(productoActualizado.cantidad);
+
     }
 
     return (
@@ -410,14 +432,18 @@ const Caja = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 overflow-y-auto">
-                                {(carrito?.map((item, index) => (
+                                {(carrito?.map((producto, index) => (
                                     <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{item.nombre}</td>
-                                        <td >{item.cantidad}</td>
-                                        <td >{item.precioUnitario}</td>
-                                        <td>{item.subtotal}</td>
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
+                                        <td >{producto.cantidad}</td>
+                                        <td >{producto.precioUnitario}</td>
+                                        <td>{producto.subtotal}</td>
                                         <td className="flex justify-center items-center">
-                                            <Button size="sm" variant="link" onClick={() => handleSetDelete(item.id)}>
+                                            <Button size="sm" variant="link" onClick={() => handleEditProductoCarrito(producto.id)}>
+                                                <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                            <Button size="sm" variant="link" onClick={() => handleDeleteProductoCarrito(producto.id)}>
                                                 <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>
@@ -427,6 +453,9 @@ const Caja = () => {
                             </tbody>
                         </table>
                     </div>
+                </div>
+                <div className="fixed bottom-12 right-48 flex justify-end">
+                    <label className="text-black text-2xl font-mono">Total a pagar: {totalPagar}</label>
                 </div>
             </div>
             {/*Modal para abrir caja*/}
