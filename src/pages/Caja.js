@@ -43,6 +43,8 @@ const Caja = () => {
     const [carrito, setCarrito] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [clientesFiltrados, setClientesFiltrados] = useState([]);
+    const [datosCliente, setDatosCliente] = useState([]);
+    const [guardarProductosFactura, setGuardarProductosFactura] = useState([]);
 
 
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
@@ -52,6 +54,8 @@ const Caja = () => {
     const [areComponentsEnabled, setAreComponentsEnabled] = useState(false);
     const [showAddClienteModal, setShowAddClienteModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
+    const [btnOneVisible, setBtnOneVisible] = useState(false);
+    const [btnSecondVisible, setBtnSecondVisible] = useState(true);
 
     const handleChangeComponents = () => {
         setAreComponentsEnabled(!areComponentsEnabled);
@@ -102,28 +106,47 @@ const Caja = () => {
 
     }
 
-    const obtenerCajas = () => {
 
-        const cajaApi = new CajaApi(user.token);
+    const obtenerCajas = async () => {
+        return new Promise((resolve, reject) => {
+            const cajaApi = new CajaApi(user.token);
+            cajaApi
+                .getCajas()
+                .then((datos) => {
+                    setCajas(datos);
+                    const filtrarCajasDisponibles = cajas?.filter(
+                        (caja) => caja.estado === "CERRADO"
+                    );
+                    setCajasDisponibles(filtrarCajasDisponibles);
+                    resolve(); // Resolver la promesa una vez que se completó la tarea
+                })
+                .catch((error) => {
+                    console.error("Error al obtener las cajas:", error);
+                    reject(error); // Rechazar la promesa en caso de error
+                });
+        });
+    };
 
-        cajaApi.getCajas()
-            .then((datos) => {
-                // Realizar algo con los datos obtenidos
-                setCajas(datos);
-                const filtrarCajasDisponibles = cajas?.filter(caja => caja.estado === "CERRADO")
-                setCajasDisponibles(filtrarCajasDisponibles)
-            })
-            .catch((error) => {
-                // Manejar el error
-                console.error("Error al obtener las cajas:", error);
-            });
+    /*const obtenerCajas = () => {
 
-    }
+    const cajaApi = new CajaApi(user.token);
+
+    cajaApi.getCajas()
+        .then((datos) => {
+            // Realizar algo con los datos obtenidos
+            setCajas(datos);
+            const filtrarCajasDisponibles = cajas?.filter(caja => caja.estado === "CERRADO")
+            setCajasDisponibles(filtrarCajasDisponibles)
+        })
+        .catch((error) => {
+            // Manejar el error
+            console.error("Error al obtener las cajas:", error);
+        });
+
+}*/
 
     const obtenerEmpleados = () => {
-
         const empleadoApi = new EmpleadoApi(user.token);
-
         empleadoApi.getEmpleados()
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
@@ -166,6 +189,7 @@ const Caja = () => {
         }
         setMensaje("");
         const api = `${process.env.API_URL}api/cajas/aperturas`;
+
         axios.post(
             api,
             {
@@ -181,12 +205,15 @@ const Caja = () => {
                 setVisible(!visible);
                 handleChangeComponents();
                 handleClose();
+
             })
             .catch((error) => {
                 reset();
             })
             .finally(() => {
                 reset();
+                setBtnOneVisible(!btnOneVisible);
+                setBtnSecondVisible(!btnSecondVisible)
             })
     }
 
@@ -253,6 +280,7 @@ const Caja = () => {
     const handleClickClienteRow = (id) => {
         const cliente = clientes.find(c => c.id === id);
         setClientesSearchValue(cliente?.nombre);
+        setDatosCliente(cliente);
         setClientesFiltrados([]);
     }
 
@@ -278,10 +306,29 @@ const Caja = () => {
             subtotal: calcularSubtotal(productoAgregar.precioVenta, cantidad),
 
         }
+
         handleAgregarDetalle(detalleCarrito);
     }
 
+
+    const handleGuardarProductoFactura = (items) => {
+        if (items.length > 0) {
+            setGuardarProductosFactura([...items]);
+        }
+        else {
+            // Si el producto no existe, agregarlo al arreglo
+            setGuardarProductosFactura([...guardarProductosFactura, items]);
+        }
+    }
+
+
+
     const handleAgregarDetalle = (detalle) => {
+        const crearFactura = {
+            cantidad: Number(detalle.cantidad),
+            producto_id: Number(detalle.id),
+            servicio_id: 0
+        }
         if (detalle.cantidad > 0) {
             const productoExistente = carrito.find(
                 (item) => item.id === detalle.id
@@ -289,19 +336,22 @@ const Caja = () => {
 
             if (productoExistente) {
                 (isEditar ? (
+                    // si se edita se pone la nueva cantidad
                     productoExistente.cantidad = Number(detalle.cantidad)
                 ) : (
+                    // Si el producto ya existe, incrementar la cantidad
                     productoExistente.cantidad += Number(detalle.cantidad)
                 ))
-                // Si el producto ya existe, incrementar la cantidad
 
                 setCarrito([...carrito]);
+                handleGuardarProductoFactura(...crearFactura)
             }
             else {
                 // Si el producto no existe, agregarlo al arreglo
                 setCarrito([...carrito, detalle]);
+                handleGuardarProductoFactura(...guardarProductosFactura, crearFactura)
             }
-        };
+        }
         setProductosSearchValue("");
         setCantidad("");
     }
@@ -316,6 +366,34 @@ const Caja = () => {
         setIsEditar(true);
         setProductosSearchValue(productoActualizado?.nombre);
         setCantidad(productoActualizado.cantidad);
+
+    }
+
+    const guardarFacturacion = () => {
+        console.log(datosCliente.id)
+        console.log(datosCliente.nombre)
+        console.log(guardarProductosFactura)
+        if (!user) return
+        const api = `${process.env.API_URL}api/factura/guardarVentar/`;
+        const token = user.accessToken;
+        axios.post(
+            api,
+            {
+                proveedorId: 0,
+                clienteId: datosCliente.id,
+                pagado: "PENDIENTE",
+                detalles: guardarProductosFactura
+            },
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                toast.success('Factura Agregado');
+            })
+            .catch((error) => {
+                console.log(error)
+                toast.error('No se pudo agregar!"');
+            });
+
 
     }
 
@@ -366,19 +444,37 @@ const Caja = () => {
 
                         </div>
                     </div>
-                    <div className="w-1/4">
+                    <div className="w-1/4 pr-20">
                         <div className="flex justify-center gap-3">
                             <button
                                 type="button"
                                 className={`transition-opacity duration-500 ease-in-out ${visible ? 'opacity-100 visible' : 'opacity-0 invisible'
-                                    }  inline-block rounded bg-success px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#14a44d] transition duration-150 ease-in-out hover:bg-success-600 hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:bg-success-600 focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:outline-none focus:ring-0 active:bg-success-700 active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(20,164,77,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)]`}>
-                                Ir a Pagar
+                                    }  inline-block rounded bg-success px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#14a44d] transition duration-150 ease-in-out hover:bg-success-600 hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:bg-success-600 focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:outline-none focus:ring-0 active:bg-success-700 active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(20,164,77,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)]`}
+
+                                onClick={() => guardarFacturacion()}
+                            >
+
+
+                                Facturar Compra
                             </button>
                             <button
                                 type="button"
                                 class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
-                                onClick={() => handleAbrirCajaModal()}>
+                                onClick={() => handleAbrirCajaModal()}
+                                hidden={btnOneVisible}
+                            >
                                 Abrir Caja
+                            </button>
+
+                            <button
+                                type="button"
+                                class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
+                                onClick={() => handleCerrarCaja()}
+                                hidden={btnSecondVisible}
+
+
+                            >
+                                Cerrar Caja
                             </button>
                         </div>
                     </div>
