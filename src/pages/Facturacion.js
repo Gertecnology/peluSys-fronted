@@ -23,8 +23,10 @@ const Facturacion = ({ }) => {
 
     const { user } = useContext(AuthContext);
 
-    const [valor, setValor] = useState("");
+    const [clienteNombreValor, setClienteNombreValor] = useState("");
     const [urlPhoto, setUrlPhoto] = useState("")
+    const [filtroSeleccionado, setFiltroSeleccionado] = useState("");
+    const [rucValor, setRucValor] = useState("");
 
     const [facturas, setFacturas] = useState([]);
     const [clientes, setClientes] = useState([]);
@@ -35,6 +37,14 @@ const Facturacion = ({ }) => {
     const [seleccionado, setSeleccionado] = useState([]);
     const [facturaDetalle, setFacturaDetalle] = useState([]);
     const [facturaSeleccionadaDetalle, setFacturaSeleccionadaDetalle] = useState([]);
+    const [opcionesFiltro, setOpcionesFiltro] = useState([
+        { id: 1, value: "PENDIENTE" },
+        { id: 2, value: "PAGADO" },
+    ]);
+    const [datosCliente, setDatosCliente] = useState([]);
+    const [clientesFiltrados, setClientesFiltrados] = useState([]);
+
+
 
 
     const [isBuscar, setIsBuscar] = useState(false);
@@ -42,9 +52,10 @@ const Facturacion = ({ }) => {
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
     const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(true);
     const handleClose = () => setShowAbrirCajaModal(false);
-    const [visible, setVisible] = useState(false);
     const [showDetalleFacturaModal, setShowDetalleFacturaModal] = useState(false);
     const handleCloseFacturaDetalleModal = () => setShowDetalleFacturaModal(false);
+    const [busquedaRuc, setBusquedaRuc] = useState(false);
+
 
 
 
@@ -54,7 +65,7 @@ const Facturacion = ({ }) => {
         obtenerCajas();
         obtenerEmpleados();
         obtenerProductos();
-        console.log(user)
+        console.log(facturas)
     }, [user]);
 
     const handlePageChange = (page) => {
@@ -68,13 +79,25 @@ const Facturacion = ({ }) => {
 
 
     useEffect(() => {
-        if (valor.length > 3) {
-            handleFiltrar(valor)
+        if (rucValor.length > 3) {
+            filtradoInput(rucValor)
+        }
+        else {
+            actualizarInputs();
+        }
+    }, [rucValor]);
+
+
+    useEffect(() => {
+        if (filtroSeleccionado !== "") {
+            handleFiltrar(filtroSeleccionado);
         }
         else {
             actualizar();
         }
-    }, [valor])
+        console.log(filtroSeleccionado);
+    }, [filtroSeleccionado])
+
 
     const obtenerFacturas = () => {
         if (user && user.token) {
@@ -162,7 +185,12 @@ const Facturacion = ({ }) => {
     }
 
     const actualizar = () => {
-        valor === "" ? setIsBuscar(false) : null;
+        filtroSeleccionado === "" ? setIsBuscar(false) : null;
+    }
+
+    const actualizarInputs = () => {
+        setClienteNombreValor("");
+        setBusquedaRuc(false);
     }
 
     const formatearCliente = (id) => {
@@ -193,30 +221,17 @@ const Facturacion = ({ }) => {
     }
 
 
-    const handleAbrirCajaModal = () => {
-        setShowAbrirCajaModal(true);
-        setIsCheckboxDisabled(!isCheckboxDisabled);
-        setVisible(!visible);
-    }
-
-    const formAbrirCaja = (data) => {
-        if (getValues("monto") !== 0) {
-            alert("El monto de apertura debe ser mayor a 0");
-        } else {
-            console.log("paso")
-        }
-
-    }
 
 
     const handleFiltrar = (filtro) => {
         setCargando(true);
         setIsBuscar(true);
         const facturaApi = new FacturasApi(user.token);
-        facturaApi.filterFacturas(filtro)
+        facturaApi.filterFacturasVentas(filtro)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
                 setFacturasFiltradas(datos);
+                console.log(facturasFiltradas);
             })
             .catch((error) => {
                 // Manejar el error
@@ -242,34 +257,115 @@ const Facturacion = ({ }) => {
         return empleado?.apellido;
     }
 
+    const handleFiltroChange = (e) => {
+        setFiltroSeleccionado(e.target.value);
+    }
+
+
+
+
+    const filtradoInput = (filtro) => {
+        if (isBuscar) {
+            if (rucValor.length > 3 && busquedaRuc) {
+                const filtroInput = facturasFiltradas.filter(factura => factura.ruc.includes(filtro));
+                setFacturasFiltradas(filtroInput);
+
+            } else {
+                //datosCliente tengo los datos del cliente actual
+                const filtroNombre = facturasFiltradas.filter(factura => factura.id === datosCliente.id);
+                setFacturasFiltradas(filtroNombre);
+            }
+        } else {
+            if (rucValor.length > 3 && busquedaRuc) {
+                setIsBuscar(true);
+                const filtroInput = facturas.filter(factura => factura.ruc.includes(filtro));
+                setFacturasFiltradas(filtroInput);
+
+            } else {
+                //datosCliente tengo los datos del cliente actual
+                setIsBuscar(true);
+                const filtroNombre = facturas.filter(factura => factura.id === datosCliente.id);
+                setFacturasFiltradas(filtroNombre);
+            }
+
+        }
+    }
+
+    const handleInputClienteChange = (event) => {
+        const nombre = event.target.value;
+        setClienteNombreValor(nombre);
+        // Filtra los elementos basado en el valor de búsqueda
+        const filtrarCliente = clientes.filter((cliente) => cliente.nombre.toLowerCase().includes(nombre.toLowerCase()));
+        setClientesFiltrados(filtrarCliente);
+    };
+
+    const handleInputRucClienteChange = (event) => {
+        const ruc = event.target.value;
+        setRucValor(ruc);
+        // Filtra los elementos basado en el valor de búsqueda
+        const filtrarCliente = clientes.find((cliente) => cliente.ruc.includes(ruc));
+        setClienteNombreValor(filtrarCliente?.nombre)
+        setBusquedaRuc(!busquedaRuc);
+    };
+
+
+    const handleClickClienteRow = (id) => {
+        console.log(id);
+        const cliente = clientes.find(c => c.id === id);
+        setClienteNombreValor(cliente?.nombre);
+        setRucValor(cliente?.ruc);
+        setDatosCliente(cliente);
+        console.log(datosCliente)
+        setClientesFiltrados([]);
+    }
+
 
     return (
         <Layout pagina={"Caja"} titulo={"CRUD Caja"} ruta={ruta.pathname}>
             <div className="block">
                 <div className="flex items-center">
-                    <div className="px-5 w-3/4 flex items-center">
-                        <Form.Control
-                            placeholder="Has tu busqueda aquí"
-                            value={valor}
-                            onChange={e => setValor(e.target.value)}
-                        />
-                    </div>
+                    <div className="px-5 w-11/12 flex flex-col">
 
-
-                    <div className="w-1/4">
-                        <div className="flex justify-center gap-3">
-                            <button
-                                type="button"
-                                className={`transition-opacity duration-500 ease-in-out ${visible ? 'opacity-100 visible' : 'opacity-0 invisible'
-                                    }  inline-block rounded bg-success px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#14a44d] transition duration-150 ease-in-out hover:bg-success-600 hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:bg-success-600 focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:outline-none focus:ring-0 active:bg-success-700 active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(20,164,77,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)]`}>
-                                Ir a Pagar
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
-                                onClick={() => handleAbrirCajaModal()}>
-                                Abrir Caja
-                            </button>
+                        <div className="flex items-center w-1/2 gap-2">
+                            <div className="w-1/4">
+                                <select
+                                    value={filtroSeleccionado}
+                                    onChange={handleFiltroChange}
+                                >
+                                    <option value="" disabled hidden>
+                                        Seleccione filtro
+                                    </option>
+                                    {opcionesFiltro.map((opcion) => (
+                                        <option key={opcion.id} value={opcion.value}>
+                                            {opcion.value}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-3/4">
+                                <Form.Control
+                                    placeholder="Nombre del Cliente"
+                                    value={clienteNombreValor}
+                                    onChange={handleInputClienteChange}
+                                />
+                            </div>
+                            <div className="w-2/4">
+                                <Form.Control
+                                    placeholder="RUC del Cliente"
+                                    value={rucValor}
+                                    onChange={handleInputRucClienteChange}
+                                />
+                            </div>
+                        </div>
+                        <div className="fixed my-12 mx-36 shadow z-50 bg-white w-96">
+                            {!busquedaRuc && clienteNombreValor && clientesFiltrados.length > 0 && (
+                                <ul>
+                                    {clientesFiltrados.map((cliente) => (
+                                        <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickClienteRow(cliente.id)} key={cliente.id}>
+                                            Cliente: {cliente.nombre} <span className="ml-10">RUC: {cliente.ruc}</span></li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     </div>
 
@@ -381,60 +477,6 @@ const Facturacion = ({ }) => {
                     </nav>
                 </div>
             </div>
-
-            {/*Modal para abrir caja*/}
-            <Modal show={showAbrirCajaModal} onHide={handleClose} centered>
-                <Form
-                    onSubmit={handleSubmit(formAbrirCaja)}
-                >
-                    <Modal.Header>
-                        <Modal.Title>
-                            Abrir Caja
-                        </Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <div className="flex justify-between">
-                            <div className="flex-col">
-                                <p>
-                                    <span className="font-bold">Cajero:</span> {user?.username} {" "} {formatearEmpleado(user?.empleado_id)}
-                                </p>
-                                <p>
-
-                                </p>
-
-                            </div>
-                            <div>
-                                <img
-                                    src={urlPhoto}
-                                    className="object-cover btn- h-9 w-9 rounded-full mr-2 bg-gray-300" alt="" />
-
-                            </div>
-
-                        </div>
-
-
-
-                        <Form.Group>
-                            <Form.Label>Monto de Apertura de Caja</Form.Label>
-                            <Form.Control
-                                {...register("monto", {
-                                    required: true
-                                })}
-                                type="number"
-                                placeholder="Monto de Apertura"
-                                isInvalid={errors.monto}
-                            />
-                        </Form.Group>
-
-                    </Modal.Body>
-                    <Modal.Footer>
-
-                        <Button variant="primary" type="submit">
-                            Abrir
-                        </Button>
-                    </Modal.Footer>
-                </Form>
-            </Modal>
 
 
             {/*Modal para ver los detalles de las facturas*/}

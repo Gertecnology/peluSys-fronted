@@ -440,9 +440,7 @@ const Caja = () => {
                             )}
 
                         </div>
-                        <div>
 
-                        </div>
                     </div>
                     <div className="w-1/4 pr-20">
                         <div className="flex justify-center gap-3">

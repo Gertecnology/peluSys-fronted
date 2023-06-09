@@ -132,7 +132,7 @@ const Sidebar = ({ children }) => {
                                     </li>
                                     <li>
                                         <button
-                                            onClick={() => handleMenuClick("/CompraProductos")}
+                                            onClick={() => handleMenuClick("/Facturacion")}
                                             className="text-gray-600 py-3 hover:text-gray-900"
                                         >
                                             Facturas
