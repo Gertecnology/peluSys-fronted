@@ -50,7 +50,7 @@ const Facturacion = ({ }) => {
     const [isBuscar, setIsBuscar] = useState(false);
     const [cargando, setCargando] = useState(false);
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
-    const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(true);
+    const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(false);
     const handleClose = () => setShowAbrirCajaModal(false);
     const [showDetalleFacturaModal, setShowDetalleFacturaModal] = useState(false);
     const handleCloseFacturaDetalleModal = () => setShowDetalleFacturaModal(false);
@@ -95,7 +95,6 @@ const Facturacion = ({ }) => {
         else {
             actualizar();
         }
-        console.log(filtroSeleccionado);
     }, [filtroSeleccionado])
 
 
@@ -207,7 +206,6 @@ const Facturacion = ({ }) => {
 
 
     const handleCheckboxChange = (i) => {
-        setShowDetalleFacturaModal(false);
 
         if (seleccionado.includes(i)) {
             setSeleccionado(seleccionado.filter((id) => id !== i));

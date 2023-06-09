@@ -370,30 +370,41 @@ const Caja = () => {
     }
 
     const guardarFacturacion = () => {
-        console.log(datosCliente.id)
-        console.log(datosCliente.nombre)
-        console.log(guardarProductosFactura)
-        if (!user) return
-        const api = `${process.env.API_URL}api/factura/guardarVentar/`;
-        const token = user.accessToken;
-        axios.post(
-            api,
-            {
-                proveedorId: 0,
-                clienteId: datosCliente.id,
-                pagado: "PENDIENTE",
-                detalles: guardarProductosFactura
-            },
-            { headers: { "Authorization": `Bearer ${token}` } }
-        )
-            .then((response) => {
-                toast.success('Factura Agregado');
-            })
-            .catch((error) => {
-                console.log(error)
-                toast.error('No se pudo agregar!"');
-            });
-
+        console.log(carrito.length)
+        if (carrito.length > 0 && datosCliente.nombre !== "") {
+            if (!user) return
+            const api = `${process.env.API_URL}api/factura/guardarVentar/`;
+            const token = user.accessToken;
+            axios.post(
+                api,
+                {
+                    proveedorId: 0,
+                    clienteId: datosCliente.id,
+                    pagado: "PENDIENTE",
+                    detalles: guardarProductosFactura
+                },
+                { headers: { "Authorization": `Bearer ${token}` } }
+            )
+                .then((response) => {
+                    toast.success('Factura Agregado');
+                })
+                .catch((error) => {
+                    console.log(error)
+                    toast.error('No se pudo agregar!"');
+                })
+                .finally(() => {
+                    setClientesSearchValue("");
+                    setRucCliente("");
+                    setProductosSearchValue("");
+                    setCarrito([]);
+                    setCantidad("");
+                    setTimeout(() => {
+                        ruta.push("/Facturacion");
+                    }, 500);
+                });
+        } else {
+            alert("Por favor complete los campos!!")
+        }
 
     }
 

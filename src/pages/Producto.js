@@ -174,7 +174,17 @@ const Producto = ({ }) => {
         const api = `${process.env.API_URL}api/producto/guardar`;
         axios.post(
             api,
-            data,
+            {
+
+                nombre: data.nombre,
+                detalle: data.detalle,
+                precioVenta: Number(data.precioVenta),
+                precioCompra: Number(data.precioCompra),
+                tipo_iva: Number(data.tipo_iva),
+                id_marca: Number(data.id_marca),
+                id_proveedor: Number(data.id_proveedor),
+
+            },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then((response) => {
@@ -216,7 +226,7 @@ const Producto = ({ }) => {
         const api = `${process.env.API_URL}api/producto/actualizar/${productoEditar.id}`;
         axios.post(api, {
             id: productoEditar.id,
-           ...data,
+            ...data,
         },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
