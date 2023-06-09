@@ -1,5 +1,5 @@
 import Layout from "@/layout/Layout";
-import { Modal, Button, Form, Table } from "react-bootstrap";
+import { Modal, Button, Form, Table, FormGroup } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
@@ -8,6 +8,7 @@ import { AiOutlineDelete } from "react-icons/ai";
 import { FaSearch } from 'react-icons/fa';
 import { toast } from "react-toastify";
 import { AuthContext } from "./contexts/AuthContext";
+import { IoMdAddCircleOutline, IoMdSearch } from "react-icons/io";
 
 
 const Cliente = ({ }) => {
@@ -31,9 +32,10 @@ const Cliente = ({ }) => {
     const obtenerDatos = () => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/`;
-        const token = user.accessToken;
+        const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
+                console.log(res.data)
                 setClientes(res.data);
             })
             .catch((error) => {
@@ -41,11 +43,10 @@ const Cliente = ({ }) => {
             });
 
     }
-
     const buscarDatos = (data) => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/buscar/${data.nombre}&${data.ruc}`;
-        const token = user.accessToken;
+        const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
                 setClientes(res.data);
@@ -53,7 +54,6 @@ const Cliente = ({ }) => {
             .catch((error) => {
                 console.log(error)
             });
-
     }
 
     const handleModal = () => {
@@ -66,7 +66,7 @@ const Cliente = ({ }) => {
     const formSubmit = (data) => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/guardar/`;
-        const token = user.accessToken
+        const token = user.token
         handleModal()
         Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
 
@@ -102,7 +102,7 @@ const Cliente = ({ }) => {
     const handleEditar = (data) => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/actualizar/` + clienteEditar.id;
-        const token = user.accessToken
+        const token = user.token
         axios.post(
             api,
             {
@@ -135,7 +135,7 @@ const Cliente = ({ }) => {
     const handleDelete = (id) => {
         if (!id || !user) return
         const api = `${process.env.API_URL}api/clientes/eliminar/${id}`;
-        const token = user.accessToken;
+        const token = user.token;
         axios.delete(api,
             { headers: { "Authorization": `Bearer ${token}` } })
             .then(() => {
@@ -247,50 +247,60 @@ const Cliente = ({ }) => {
             </Modal>
 
 
-            <div className="block">
-                <Form onSubmit={handleSubmitBuscar(buscarDatos) }>
-                    <div className="px-5 flex justify-between gap-3">
-
-                        <Form.Control
-                            {...registerBuscar("nombre")}
-                            className="w-1/6"
-                            placeholder="Nombre del cliente"
-                            
-                        />
-                        <Form.Control
-                            {...registerBuscar("ruc")}
-                            className="w-1/6"
-                            placeholder="RUC"
-                        />
-
-                        <Button variant="secondary" className="text-xs" type="subtmit">
-                            <div className="flex justify-between gap-2 items-center">
-                                <div>Buscar</div>
-                                <div className="flex align-middle items-center"><FaSearch /></div>
+            <div className="flex justify-center">
+                <div className="flex flex-row items-center">
+                    <Form onSubmit={handleSubmitBuscar(buscarDatos)}>
+                        <div className="flex flex-row gap-3"> 
+                            <FormGroup>
+                                <Form.Control {...registerBuscar("nombre")} placeholder="Nombre del cliente" />
+                            </FormGroup>
+                            <FormGroup>
+                                <Form.Control {...registerBuscar("ruc")} placeholder="RUC del cliente" />
+                            </FormGroup>
+                            <Button variant="primary" type="submit"> <IoMdSearch /> </Button>
+                        </div>
+                    </Form>
+                </div>
+                <div className="pl-40">
+                    <div className="flex justify-center mt-3">
+                        <button size="lg" onClick={() => handleModal()}>
+                            <div className="flex gap-1">
+                                <p className="text-center hover:text-blueEdition hover:font-bold">Agregar</p>
+                                <IoMdAddCircleOutline
+                                    color="#808080"
+                                    size="30px"
+                                    onMouseOver={({ target }) => (target.style.color = "blue")}
+                                    onMouseOut={({ target }) => (target.style.color = "#808080")}
+                                />
                             </div>
-                        </Button>
-
-                        <Button variant="primary" size="sm" onClick={() => handleModal()}>Agregar Cliente</Button>
-
+                        </button>
                     </div>
-                </Form>
+                </div>
+            </div>
 
 
-                <div className="px-5 mt-2 h-96 overflow-y-scroll">
-                    <Table bordered hover size="sm" className="bg-white mt-10">
-                        <thead className="sticky top-0 bg-white">
+
+
+
+
+
+
+            <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
+                <div className="w-full overflow-x-auto">
+                    <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
+                        <thead className="bg-blue-800">
                             <tr>
-                                <th>Nombre</th>
-                                <th>RUC</th>
-                                <th>Dirección</th>
-                                <th>Teléfono</th>
-                                <th className="w-1/12">Acciones</th>
+                                <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
+                                <th scope="col" className="px-6 py-4 font-medium text-white">RUC</th>
+                                <th scope="col" className="px-6 py-4 font-medium text-white">Direccion</th>
+                                <th scope="col" className="px-6 py-4 font-medium text-white">Telefono</th>
+                                <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {clientes.map((cliente, index) => (
-                                <tr key={index}>
-                                    <td>{cliente.nombre}</td>
+                        <tbody className="divide-y divide-gray-100">
+                            {(clientes?.map((cliente, index) => (
+                                <tr key={index} className="hover:bg-gray-50">
+                                    <td className="ps-3">{cliente.nombre}</td>
                                     <td>{cliente.ruc}</td>
                                     <td>{cliente.direccion}</td>
                                     <td>{cliente.telefono}</td>
@@ -307,11 +317,12 @@ const Cliente = ({ }) => {
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            )))}
                         </tbody>
-                    </Table>
+                    </table>
                 </div>
             </div>
+
         </Layout >
     );
 }
