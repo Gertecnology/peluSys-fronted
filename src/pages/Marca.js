@@ -66,8 +66,8 @@ const Marca = ({ }) => {
             marcaApi.getMarcasPage()
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
-                    setMarcas(datos.content);
-                    setTotalPages(datos.totalPages);
+                    setMarcas(datos?.content);
+                    setTotalPages(datos?.totalPages);
 
                 })
                 .catch((error) => {
@@ -80,7 +80,6 @@ const Marca = ({ }) => {
 
     const handleModal = () => {
         setShowModal(!showModal);
-        reset();
         setIsEditar(false);
 
 
@@ -103,6 +102,8 @@ const Marca = ({ }) => {
             })
             .finally(() => {
                 obtenerMarcas();
+                reset();
+
 
             })
 
@@ -112,7 +113,6 @@ const Marca = ({ }) => {
         const marca = marcas.find(s => s.id === id);
         setMarcaEditar(marca);
         handleModal();
-        setValue("nombre", marca.nombre);
         setIsEditar(true);
         Object.keys(getValues()).forEach(key => setValue(key, marca[key]));
 
@@ -138,9 +138,10 @@ const Marca = ({ }) => {
             .finally(() => {
                 setMarcaEditar(undefined);
                 setIsEditar(false);
+                reset();
+
 
             })
-        handleModal();
 
     }
 
@@ -184,7 +185,7 @@ const Marca = ({ }) => {
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header closeButton>
-                        <Modal.Title>Agregar Nueva Marca</Modal.Title>
+                        <Modal.Title> {isEditar ? "Editar Marca" : "Agregar Marca"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
 

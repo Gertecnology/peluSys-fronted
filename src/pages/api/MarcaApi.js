@@ -9,7 +9,7 @@ class MarcaApi {
 
     getMarcas = async () => {
         try {
-            const api = `${process.env.API_URL}api/marca/page`;
+            const api = `${process.env.API_URL}api/marca/`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
             });

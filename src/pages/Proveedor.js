@@ -35,7 +35,7 @@ const Proveedor = ({ }) => {
 
     useEffect(() => {
         obtenerProveedores();
-        console.log(proveedores)
+        console.log(proveedores);
     }, [])
 
 
@@ -67,13 +67,14 @@ const Proveedor = ({ }) => {
             proveedorApi.getProveedorPage()
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
-                    setProveedores(datos.content);
-                    setTotalPages(datos.totalPages);
+                    setProveedores(datos?.content);
+                    setTotalPages(datos?.totalPages);
+                    console.log(proveedores);
 
                 })
                 .catch((error) => {
                     // Manejar el error
-                    console.error("Error al obtener los datos:", error);
+                    console.error("Error al obtener los proveedores:", error);
                 });
         }
     }
@@ -81,7 +82,6 @@ const Proveedor = ({ }) => {
 
     const handleModal = () => {
         setShowModal(!showModal);
-        reset();
         setIsEditar(false);
 
 
@@ -104,6 +104,8 @@ const Proveedor = ({ }) => {
             })
             .finally(() => {
                 obtenerProveedores();
+                reset();
+
 
             })
 
@@ -113,11 +115,6 @@ const Proveedor = ({ }) => {
         const proveedor = proveedores.find(s => s.id === id);
         setProveedorEditar(proveedor);
         handleModal();
-        setValue("ruc", proveedor.ruc);
-        setValue("nombre", proveedor.nombre);
-        setValue("telefono", proveedor.telefono);
-        setValue("direccion", proveedor.direccion);
-        setValue("pais", proveedor.pais);
         setIsEditar(true);
         Object.keys(getValues()).forEach(key => setValue(key, proveedor[key]));
 
@@ -143,9 +140,10 @@ const Proveedor = ({ }) => {
             .finally(() => {
                 setProveedorEditar(undefined);
                 setIsEditar(false);
+                reset();
+
 
             })
-        handleModal();
 
     }
 
@@ -193,9 +191,21 @@ const Proveedor = ({ }) => {
                     onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
                 >
                     <Modal.Header closeButton>
-                        <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
+                        <Modal.Title> {isEditar ? "Editar Proveedor" : "Agregar Proveedor"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+
+                        <Form.Group>
+                            <Form.Label>Timbrado</Form.Label>
+                            <Form.Control
+                                {...register("timbrado", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Timbrado del Proveedor"
+                                isInvalid={errors.timbrado}
+                            />
+                        </Form.Group>
 
                         <Form.Group>
                             <Form.Label>Ruc</Form.Label>
@@ -242,6 +252,18 @@ const Proveedor = ({ }) => {
                                 type="text"
                                 placeholder="Direccion del Proveedor"
                                 isInvalid={errors.direccion}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>E-mail</Form.Label>
+                            <Form.Control
+                                {...register("email", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="E-mail del Proveedor"
+                                isInvalid={errors.email}
                             />
                         </Form.Group>
 
