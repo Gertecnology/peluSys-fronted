@@ -28,6 +28,11 @@ const Citas = () => {
   const [servicios, setServicios] = useState([])
   const [peluqueros, setPeluqueros] = useState([])
   const [peluqueroSeleccionado, setPeluqueroSeleccionado] = useState(0)
+  const coloresEstados = {
+    "ESPERA": "#0369a1",
+    "PROCESO": "#be185d",
+    "FINALIZADO": "#15803d"
+}
 
   useEffect(() => {
     obtenerDatos()
@@ -292,7 +297,7 @@ const Citas = () => {
                                 <td>{cita.horaEstimada.slice(0, -3)}</td>
                                 <td>{cita.nombreCliente}</td>
                                 <td>{peluqueros.find(p => p.empleado_id === cita.empleado_id)?.nombre}</td>
-                                <td> <Badge>{cita.estado_cita}</Badge> </td>
+                                <td> <Badge style={{backgroundColor: coloresEstados[cita.estado_cita]}}>{cita.estado_cita}</Badge> </td>
                                 <td>
                                   <div className="flex text-center justify-center align-middle items-center">
                                     <Button size="sm" variant="link">
