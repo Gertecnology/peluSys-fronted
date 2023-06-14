@@ -7,6 +7,8 @@ import { FcCalendar, FcShop } from "react-icons/fc";
 const Sidebar = ({ children }) => {
     const router = useRouter();
     const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+    const [isSubMenuFacturacionOpen, setIsSubMenuFacturacionOpen] = useState(false);
+    const [isSubMenuVentasOpen, setIsSubMenuVentasOpen] = useState(false);
 
     const handleMenuClick = (route) => {
         router.push(route);
@@ -14,6 +16,14 @@ const Sidebar = ({ children }) => {
 
     const handleSubMenuClick = () => {
         setIsSubMenuOpen(!isSubMenuOpen);
+    };
+    const handleSubMenuFacturacionClick = () => {
+        setIsSubMenuFacturacionOpen(!isSubMenuFacturacionOpen);
+
+    };
+    const handleSubMenuVentasClick = () => {
+        setIsSubMenuVentasOpen(!isSubMenuVentasOpen);
+
     };
 
     return (
@@ -71,6 +81,53 @@ const Sidebar = ({ children }) => {
                                             className="text-gray-600 py-3 hover:text-gray-900"
                                         >
                                             Proveedor
+                                        </button>
+                                    </li>
+
+                                </ul>
+                            )}
+                        </li>
+
+
+                        <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
+                            <button
+                                onClick={handleSubMenuFacturacionClick}
+                                className="flex justify-center items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                            >
+                                <FcShop className="text-xl" />
+                                <p className="text-lg mb-0">Facturación</p>
+                            </button>
+                            {isSubMenuFacturacionOpen && (
+                                <ul className="ml-8 mt-2">
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/CompraProductos")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Comprar P.
+                                        </button>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
+
+
+                        <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
+                            <button
+                                onClick={handleSubMenuVentasClick}
+                                className="flex justify-center items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                            >
+                                <FcShop className="text-xl" />
+                                <p className="text-lg mb-0">Ventas</p>
+                            </button>
+                            {isSubMenuVentasOpen && (
+                                <ul className="ml-8 mt-2">
+                                      <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/Caja")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Caja
                                         </button>
                                     </li>
                                 </ul>

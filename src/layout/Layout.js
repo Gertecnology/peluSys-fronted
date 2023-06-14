@@ -40,7 +40,7 @@ const Layout = ({ children, pagina }) => {
 
   if (!mostarContenido)
     return (
-      <div class="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen">
         <Bars
           height="100"
           width="100"

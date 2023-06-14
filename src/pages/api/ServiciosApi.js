@@ -3,23 +3,24 @@ import process from "next/dist/build/webpack/loaders/resolve-url-loader/lib/post
 import { useContext } from "react";
 import { AuthContext } from "@/pages/contexts/AuthContext";
 
-class ProductoApi {
+class ServicioApi {
     constructor(token) {
         this.token = token;
     }
 
-    getProducto = async (page, size) => {
+    getServicios = async (page, size) => {
         try {
-            const api = `${process.env.API_URL}api/producto/page`;
+            ///servicios/page?page=0&size=1&sort=string
+            const api = `${process.env.API_URL}api/servicios/page?page=${page}&size=${size}&sort=desc`;
             const response = await axios.get(api, {
-                headers: { Authorization: `Bearer ${this.token}` },
+                headers: { Authorization: `Bearer ${this.token}`},
                 params: { page, size },
             });
 
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error("Error al obtener los productos");
+                throw new Error("Error al obtener los servicios");
             }
         } catch (error) {
             console.error("Error en la solicitud HTTP:", error);
@@ -27,10 +28,9 @@ class ProductoApi {
         }
     };
 
-
-    filterProducto = async (filter) => {
+    filterServicio = async (filter) => {
         try {
-            const api = `${process.env.API_URL}api/producto/buscar?nombre=${filter}&marca=${filter}`;
+            const api = `${process.env.API_URL}api/servicios/buscarNombre?nombre=${filter}`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
             });
@@ -38,7 +38,7 @@ class ProductoApi {
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error("Error al filtrar los productos");
+                throw new Error("Error al filtrar los servicios");
             }
         } catch (error) {
             console.error("Error en la solicitud HTTP:", error);
@@ -46,10 +46,9 @@ class ProductoApi {
         }
     };
 
-
-    getProductoList = async () => {
+    getServiciosList = async () => {
         try {
-            const api = `${process.env.API_URL}api/producto/`;
+            const api = `${process.env.API_URL}api/servicios/`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
             });
@@ -57,22 +56,14 @@ class ProductoApi {
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error("Error al obtener los productos");
+                throw new Error("Error al obtener los servicios");
             }
         } catch (error) {
             console.error("Error en la solicitud HTTP:", error);
             throw error;
         }
     };
-
-
-
-
-
-
 
 }
 
-
-
-export default ProductoApi;
+export default ServicioApi;

@@ -45,8 +45,8 @@ const Citas = () => {
   const obtenerDatos = () => {
     if (!user) return
     const api = `${process.env.API_URL}api/cita/page`;
-    const token = user.token;
-    axios.get(api ,{ headers: { "Authorization": `Bearer ${token}` } })
+    const token = user.accessToken;
+    axios.get(api, {} ,{ headers: { "Authorization": `Bearer ${token}` } })
         .then(res => {
           setCitas(res.data.content);
         })
@@ -124,7 +124,7 @@ const Citas = () => {
 
   const obtenerClientes = () => {
     if (!user) return
-    const token = user.token;
+    const token = user.accessToken;
     const api = `${process.env.API_URL}api/clientes/`;
 
     axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
@@ -138,7 +138,7 @@ const Citas = () => {
 
   const obtenerServicios = () => {
     if (!user) return
-    const token = user.token;
+    const token = user.accessToken;
     const api = `${process.env.API_URL}api/servicios/`;
 
     axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
@@ -153,12 +153,10 @@ const Citas = () => {
 
   const obtenerPeluqueros = () => {
     if (!user) return
-    const api = `${process.env.API_URL}api/empleado/?page=0&size=100&sort=asc`;
-    const token = user.token;
-    console.log(user)
-    axios.get(api,{ headers: { "Authorization": `Bearer ${token}` } })
+    const api = `${process.env.API_URL}api/empleado/`;
+    const token = user.accessToken;
+    axios.get(api, {} ,{ headers: { "Authorization": `Bearer ${token}` } })
         .then(res => {
-          console.log(res)
           const empleados = res.data.content
           setPeluqueros(empleados.filter(empleado => empleado.cargo === "PELUQUERO"))
         })
