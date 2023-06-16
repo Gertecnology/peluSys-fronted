@@ -18,6 +18,10 @@ const Login = () => {
 
     const onSubmit = async (data) => {
         const respuesta = await fetchUser(data);
+        if(!respuesta.token){
+                    setSubmitError(true);
+            return
+        }
         if(respuesta.status || respuesta.code || respuesta.mensaje){
             setSubmitError(true);
             return
