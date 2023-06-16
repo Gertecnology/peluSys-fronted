@@ -76,6 +76,7 @@ const ServiciosMasVendidos = ({ }) => {
         const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
+              console.log(res.data)
                 setServiciosMasVendidos(res.data)
             })
             .catch((error) => {

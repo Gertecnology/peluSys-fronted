@@ -16,9 +16,9 @@ import {
 
 
 
-const ProductosMasVendidos = ({ }) => {
+const StockProductos = ({ }) => {
     const { user } = useContext(AuthContext)
-    const [productosMasVendidos, setProductosMasVendidos] = useState([])
+    const [stockProductos, setStockProductos] = useState([])
     const [chartData, setChartData] = useState({})
     const [chartOptions, setChartOptions] = useState({})
 
@@ -40,16 +40,16 @@ const ProductosMasVendidos = ({ }) => {
       ];
       
 
-    useEffect(() => obtenerProductosMasVendidos(), [])
+    useEffect(() => obtenerStockProductos(), [])
     useEffect( ()=>{
         setChartData(
             {
                 Title: "PRODUCTOS MAS COMPRADOS",
-                labels: productosMasVendidos?.map(p => p.productos.nombre),
+                labels: stockProductos?.map(p => p.nombre),
                 datasets: [
                   {
                     label: 'Cantidad',
-                    data:  productosMasVendidos?.map(p => p.cantidad),
+                    data:  stockProductos?.map(p => p.cantidad),
                     backgroundColor: colores,
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 0,
@@ -63,20 +63,21 @@ const ProductosMasVendidos = ({ }) => {
                   y: {
                     beginAtZero: true,
                     maxTicksLimit: 2,
-                    max: Math.round(Math.max(...productosMasVendidos?.map(p => p.cantidad)) + (Math.max(...productosMasVendidos?.map(p => p.cantidad))/3))
+                    max: Math.round(Math.max(...stockProductos?.map(p => p.cantidad)) + (Math.max(...stockProductos?.map(p => p.cantidad))/3))
                   },
                 },
               }
         )
-    }, [productosMasVendidos] )
+    }, [stockProductos] )
 
-    const obtenerProductosMasVendidos = () => {
+    const obtenerStockProductos = () => {
         if (!user) return
-        const api = `${process.env.API_URL}api/informes/topProductos?eCompra=VENTA`;
+        const api = `${process.env.API_URL}api/informes/productosEnStock`;
         const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
-                setProductosMasVendidos(res.data)
+              console.log(res.data)
+                setStockProductos(res.data)
             })
             .catch((error) => {
                 console.log(error)
@@ -86,8 +87,8 @@ const ProductosMasVendidos = ({ }) => {
 
 
     return (
-         productosMasVendidos.length ? <Bar data={chartData} options={chartOptions} /> : ""
+         stockProductos.length ? <Bar data={chartData} options={chartOptions} /> : ""
     );
 }
 
-export default ProductosMasVendidos;
+export default StockProductos;

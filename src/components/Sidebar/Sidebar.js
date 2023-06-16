@@ -1,15 +1,19 @@
 
 import { AuthContext } from "@/pages/contexts/AuthContext";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useContext, useState } from "react";
-import { FcCalendar, FcShop } from "react-icons/fc";
+import { BsScissors } from "react-icons/bs";
+import { FcAssistant, FcBullish, FcCalendar, FcShop } from "react-icons/fc";
 
 
 const Sidebar = ({ children }) => {
     const router = useRouter();
     const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
     const [isSubMenuFacturacionOpen, setIsSubMenuFacturacionOpen] = useState(false);
+    const [isSubMenuRRHHOpen, setIsSubMenuRRHHOpen] = useState(false);
     const [isSubMenuVentasOpen, setIsSubMenuVentasOpen] = useState(false);
+    
     const {setUser} = useContext(AuthContext)
 
 
@@ -19,6 +23,9 @@ const Sidebar = ({ children }) => {
 
     const handleSubMenuClick = () => {
         setIsSubMenuOpen(!isSubMenuOpen);
+    };
+    const handleSubMenuRRHHClick = () => {
+        setIsSubMenuRRHHOpen(!isSubMenuRRHHOpen);
     };
     const handleSubMenuFacturacionClick = () => {
         setIsSubMenuFacturacionOpen(!isSubMenuFacturacionOpen);
@@ -30,24 +37,42 @@ const Sidebar = ({ children }) => {
     };
 
     return (
-        <div className="flex">
+        <div className="flex justify-start mt-16">
             {/* Menú lateral */}
-            <aside className="bg-gray-200 fixed  w-64 h-screen overflow-y-auto">
+            <aside className="bg-gray-200 fixed jus w-64 h-screen overflow-y-auto">
                 <div className="bg-white border-r h-full">
                     <ul className="p-8">
-                        <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
+                    <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
                             <button
-                                onClick={() => handleMenuClick("/citas")}
-                                className="flex justify-center items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                                onClick={() => handleMenuClick("/dashboard")}
+                                className="flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                            >
+                                <FcBullish className="text-xl" />
+                                <p className="text-lg mb-0">Dashboard</p>
+                            </button>
+                        </li>
+                    <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
+                            <button
+                                onClick={() => handleMenuClick("/peluquero/citas")}
+                                className="flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                            >
+                                <BsScissors className="text-xl" />
+                                <p className="text-lg mb-0">Mis Citas</p>
+                            </button>
+                        </li>
+                        <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
+                            <Link
+                               href={"/citas"}
+                                className="no-underline flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
                             >
                                 <FcCalendar className="text-xl" />
                                 <p className="text-lg mb-0">Citas</p>
-                            </button>
+                            </Link>
                         </li>
                         <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
                             <button
                                 onClick={handleSubMenuClick}
-                                className="flex justify-center items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                                className="flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
                             >
                                 <FcShop className="text-xl" />
                                 <p className="text-lg mb-0">Inventarios</p>
@@ -95,7 +120,7 @@ const Sidebar = ({ children }) => {
                         <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
                             <button
                                 onClick={handleSubMenuFacturacionClick}
-                                className="flex justify-center items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                                className="flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
                             >
                                 <FcShop className="text-xl" />
                                 <p className="text-lg mb-0">Facturación</p>
@@ -118,7 +143,7 @@ const Sidebar = ({ children }) => {
                         <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
                             <button
                                 onClick={handleSubMenuVentasClick}
-                                className="flex justify-center items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                                className="flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
                             >
                                 <FcShop className="text-xl" />
                                 <p className="text-lg mb-0">Ventas</p>
@@ -144,6 +169,38 @@ const Sidebar = ({ children }) => {
                                 </ul>
                             )}
                         </li>
+
+                        <li className="flex justify-start flex-col w-full md:w-auto items-start pb-1">
+                            <button
+                                onClick={handleSubMenuRRHHClick}
+                                className="flex justify-start items-center space-x-4 hover:text-white hover:bg-blue-700 text-gray-400 rounded px-2 py-2 w-full md:w-52"
+                            >
+                                <FcAssistant className="text-xl" />
+                                <p className="text-lg mb-0">RRHH</p>
+                            </button>
+                            {isSubMenuRRHHOpen && (
+                                <ul className="ml-8 mt-2">
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/clientes")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Clientes
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/empleados")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Empleados
+                                        </button>
+                                    </li>
+               
+                                </ul>
+                            )}
+                        </li>
+
                     </ul>
                     
 

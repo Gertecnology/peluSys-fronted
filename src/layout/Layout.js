@@ -62,8 +62,8 @@ const Layout = ({ children, pagina }) => {
           </Head>
           <div>
 
-              <Header />
-              <Sidebar>{children}</Sidebar>
+              <Header className=""/>
+              <Sidebar >{children}</Sidebar>
           </div>
           <ToastContainer />
       </>

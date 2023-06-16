@@ -1,5 +1,5 @@
 import Layout from "@/layout/Layout";
-import { Modal, Button, Form, Table, FormGroup } from "react-bootstrap";
+import { Modal, Button, Form, Table, FormGroup, Row, Col, Badge } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
@@ -9,6 +9,7 @@ import { FaSearch } from 'react-icons/fa';
 import { toast } from "react-toastify";
 import { AuthContext } from "./contexts/AuthContext";
 import { IoMdAddCircleOutline, IoMdSearch } from "react-icons/io";
+import { BsEyeFill } from "react-icons/bs";
 
 
 const Cliente = ({ }) => {
@@ -22,11 +23,22 @@ const Cliente = ({ }) => {
     const [clienteEditar, setClienteEditar] = useState(undefined)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
+    const [showCliente, setShowCliente] = useState({})
+    const [showDetailModal, setShowDetailModal] = useState(false)
+    const [citas,setCitas] = useState([])
+    const [serviciosCitas, setServiciosCitas] = useState({});
+
 
 
     useEffect(() => {
         obtenerDatos();
+        obtenerCitas()
     }, [])
+    useEffect( () => {
+        if(!citas) return
+        setServiciosCitas([])
+        citas.forEach((cita) => obtenerServiciosCitas(cita.id))
+      }, [citas] )
 
 
     const obtenerDatos = () => {
@@ -49,12 +61,40 @@ const Cliente = ({ }) => {
         const token = user.token;
         axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
+                console.log(res.data)
                 setClientes(res.data);
             })
             .catch((error) => {
                 console.log(error)
             });
     }
+
+    const obtenerCitas = () => {
+        if (!user) return
+        const api = `${process.env.API_URL}api/cita/page`;
+        const token = user.token;
+        axios.get(api, { headers: { "Authorization": `Bearer ${token}` } })
+          .then(res => {
+            setCitas(res.data.content);
+          })
+          .catch((error) => {
+            console.log(error)
+          });
+    
+      }
+      const obtenerServiciosCitas = async (id) => {
+        if (!user) return;
+        const token = user.token;
+        const api = `${process.env.API_URL}api/servicios/findByCitas/${id}`;
+      
+        try {
+          const response = await axios.get(api, { headers: { "Authorization": `Bearer ${token}` } });
+          const servicios = response.data;
+          setServiciosCitas(prevState => ({ ...prevState, [id]: servicios }));
+        } catch (error) {
+          console.log(error);
+        }
+      };
 
     const handleModal = () => {
         Object.keys(getValues()).forEach(key => setValue(key, ""))
@@ -143,11 +183,16 @@ const Cliente = ({ }) => {
             })
             .catch((error) => {
                 console.log(error)
-                toast.error('No se pudo Eliminar!"');
+                toast.error('No se pudo Eliminar!"'); handleSetDelete
             }).finally(() => {
                 setShowDeleteModal(false)
                 setIdEliminar(-1)
             })
+    }
+
+    const handleDetailModal = (id) => {
+        setShowCliente(clientes.find(c => c.id === id))
+        setShowDetailModal(true)
     }
 
     return (
@@ -246,11 +291,91 @@ const Cliente = ({ }) => {
                 </Form>
             </Modal>
 
+            <Modal size="lg" show={showDetailModal} onHide={() => setShowDetailModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Detalles del cliente</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+  <Row className="mx-2 text-xl">
+    <Col md={8}>
+      <div className="font-bold text-3xl">
+        {showCliente?.nombre}
+      </div>
+      <div className="font-bold mt-3">
+        RUC:{" "}
+        <span className="font-normal">{showCliente?.ruc}</span>
+      </div>
+      <div className="font-bold mt-3">
+        Email:{" "}
+        <span className="font-normal">{showCliente?.email}</span>
+      </div>
+      <div className="font-bold mt-3">
+        Dirección:{" "}
+        <span className="font-normal">{showCliente?.direccion}</span>
+      </div>
+    </Col>
+    <Col md={4}>
+      <div className="font-bold mt-3">
+        Teléfono:{" "}
+        <span className="font-normal">{showCliente?.telefono}</span>
+      </div>
+      <div className="font-bold mt-3">
+        Crédito:{" "}
+        <span className="font-normal">{showCliente?.credito}</span>
+      </div>
+      <div className="font-bold mt-3">
+        Crédito máximo:{" "}
+        <span className="font-normal">{showCliente?.credito_maximo}</span>
+      </div>
+    </Col>
+  </Row>
+  <Row>
+  <table className="min-w-full divide-y divide-gray-200 mt-3">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">
+                                    Fecha
+                                </th>
+                                <th scope="col" className="px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">
+                                    Servicios
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                           {citas?.filter(cita => cita.nombreCliente === showCliente?.nombre)
+                                   .filter(cita => cita.estado_cita === "FINALIZADO")
+                                   .map(cita => {
+                                        const servicios = serviciosCitas[cita.id] ?? []
+                                        return <tr key={cita.id}>
+                                             <td className="px-4 py-2 text-gray-700">
+                                                {cita?.fechaEstimada}
+                                             </td>
+                                             <td className="px-4 py-2 text-gray-700 gap-2">
+                                                {servicios?.map(servicio => <><Badge bg="success">{servicio.detalle}</Badge>{" "}</>)}
+                                             </td>
+
+                                        </tr>
+                                   })}
+                        </tbody>
+                    </table>
+
+  </Row>
+</Modal.Body>
+
+
+                    <Modal.Footer>
+                        <Button onClick={() => setShowDetailModal(false)}>
+                            Cerrar
+                        </Button>
+
+                    </Modal.Footer>
+            </Modal>
+
 
             <div className="flex justify-center">
                 <div className="flex flex-row items-center">
                     <Form onSubmit={handleSubmitBuscar(buscarDatos)}>
-                        <div className="flex flex-row gap-3"> 
+                        <div className="flex flex-row gap-3">
                             <FormGroup>
                                 <Form.Control {...registerBuscar("nombre")} placeholder="Nombre del cliente" />
                             </FormGroup>
@@ -312,6 +437,10 @@ const Cliente = ({ }) => {
                                             </Button>
                                             <Button size="sm" variant="link" onClick={() => handleSetDelete(cliente.id)}>
                                                 <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                            <Button size="sm" variant="link" onClick={() => handleDetailModal(cliente.id)}>
+                                                <BsEyeFill color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "green"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>
                                         </div>

@@ -13,6 +13,7 @@ import axios from "axios"
 import { AuthContext } from './contexts/AuthContext';
 import { convertirHora } from '@/helpers';
 import { toast } from "react-toastify";
+import { BsX } from 'react-icons/bs';
 
 
 const Citas = () => {
@@ -28,6 +29,8 @@ const Citas = () => {
   const [servicios, setServicios] = useState([])
   const [peluqueros, setPeluqueros] = useState([])
   const [peluqueroSeleccionado, setPeluqueroSeleccionado] = useState(0)
+  const [serviciosCitas, setServiciosCitas] = useState({});
+  
   const coloresEstados = {
     "ESPERA": "#0369a1",
     "PROCESO": "#be185d",
@@ -40,6 +43,12 @@ const Citas = () => {
     obtenerServicios()
     obtenerPeluqueros()
   }, [])
+
+  useEffect( () => {
+    if(!citas) return
+    setServiciosCitas([])
+    citas.forEach((cita) => obtenerServiciosCitas(cita.id))
+  }, [citas] )
 
 
   useEffect( () => console.log(fechaSeleccionada), [fechaSeleccionada] )
@@ -107,7 +116,7 @@ const Citas = () => {
       nombreCliente: data.nombre_cliente,
       empleado_id: peluqueroSeleccionado.value,
       horaEstimada: data.horaEstimada,
-      detalle: data.detalle,
+      detalle: data.detalle ?? "",
       estado_cita: "ESPERA",
       estado_pago: "PENDIENTE",
       fechaEstimada: fechaSeleccionada.format("YYYY-MM-DD"),
@@ -159,6 +168,44 @@ const Citas = () => {
       });
   }
 
+  const obtenerServiciosCitas = async (id) => {
+    if (!user) return;
+    const token = user.token;
+    const api = `${process.env.API_URL}api/servicios/findByCitas/${id}`;
+  
+    try {
+      const response = await axios.get(api, { headers: { "Authorization": `Bearer ${token}` } });
+      const servicios = response.data;
+      setServiciosCitas(prevState => ({ ...prevState, [id]: servicios }));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const cambiarEstado = (id) => {
+    if (!user) return
+    const api = `${process.env.API_URL}api/cita/estado/${id}`;
+    const token = user.token;
+    const cita = citas.find(cita => cita.id === id)
+    const estado = "CANCELADO"
+    if (cita.estado_cita === "FINALIZADO") return
+    if (cita.estado_cita === "CANCELADO") return
+    axios.post(api,
+        estado
+        , {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "content-type": "application/json"
+            },
+        })
+        .then(res => {
+            obtenerDatos()
+        })
+        .catch((error) => {
+            toast.error('No fue posible cambiar el estado de la cita.');
+            console.log(error)
+        });
+}
+  
 
   const obtenerPeluqueros = () => {
     if (!user) return
@@ -238,7 +285,7 @@ const Citas = () => {
                     <Form.Label>Detalle</Form.Label>
                     <Form.Control
                       as="textarea"
-                      {...register("detalle", { required: true })}
+                      {...register("detalle", { required: false })}
                       placeholder="Detalle de la cita"
                       isInvalid={errors.detalle}
                     />
@@ -291,8 +338,11 @@ const Citas = () => {
                     <tbody>
                       {citas.filter(cita => moment(cita.fechaEstimada).isSame(fechaSeleccionada,"day") )
                           .sort((citaA, citaB) => moment(citaA.horaEstimada, 'HH:mm').diff(moment(citaB.horaEstimada, 'HH:mm')))
-                          .map((cita, index) =>
-                            <>
+                          .map((cita, index) =>{
+
+                            const servicios = serviciosCitas[cita.id] || [];
+
+                           return <>
                               <tr key={index} className="text-center justify-center align-middle items-center hover:cursor-pointer" onClick={() => setFilaSeleccionada(index)}>
                                 <td>{cita.horaEstimada.slice(0, -3)}</td>
                                 <td>{cita.nombreCliente}</td>
@@ -300,11 +350,8 @@ const Citas = () => {
                                 <td> <Badge style={{backgroundColor: coloresEstados[cita.estado_cita]}}>{cita.estado_cita}</Badge> </td>
                                 <td>
                                   <div className="flex text-center justify-center align-middle items-center">
-                                    <Button size="sm" variant="link">
-                                      <FiEdit2 color="#808080" size="20px" onMouseOver={({ target }) => target.style.color = "blue"} onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                    </Button>
-                                    <Button size="sm" variant="link">
-                                      <AiOutlineDelete color="#808080" size="20px" onMouseOver={({ target }) => target.style.color = "red"} onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                    <Button size="sm" variant="link" onClick={() => cambiarEstado(cita.id)}  >
+                                        <BsX />
                                     </Button>
                                   </div>
                                 </td>
@@ -318,8 +365,8 @@ const Citas = () => {
                                           <div className="block text-center">
                                             <div>{cita.detalle}</div>
                                             <div className="mt-3 font-bold">Servicios:</div>
-                                            <div className="gap-3">/* Listado de servicios */
-                                              {cita.servicios?.map((servicio) => <Badge bg="success" className="mx-1">{servicio.label}</Badge>)}
+                                            <div className="gap-3">
+                                              {servicios?.map((servicio) => <Badge bg="success" className="mx-1">{servicio.detalle}</Badge>)}
                                             </div>
                                           </div>
                                         </Accordion.Body>
@@ -328,7 +375,7 @@ const Citas = () => {
                                   </td>
                                 </tr>
                               )}
-                            </>
+                            </>}
                           )
                       }
                     </tbody>

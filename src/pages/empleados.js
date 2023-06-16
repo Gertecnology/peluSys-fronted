@@ -529,44 +529,22 @@ const Empleados = ({ }) => {
 
 
             <div className="block">
-                <div className="px-5 flex justify-between gap-1 w-10/12">
-
-                    <Form.Control
-                        className="w-1/6"
-                        placeholder="Nombre del empleado"
-                    />
-                    <Form.Control
-                        className="w-1/6"
-                        placeholder="Apellido del empleado"
-                    />
-                    <Form.Control
-                        className="w-1/6"
-                        placeholder="Cedula de Identidad"
-                    />
-
-                    <Button variant="secondary">
-                       <IoMdSearch /> 
-                    </Button>
-
-                    <div className="pl-40 w-2/12">
-                    <div className="flex justify-center mt-3">
-                        <button size="lg" onClick={() => handleModal()}>
-                            <div className="flex gap-1">
-                                <p className="text-center hover:text-blueEdition hover:font-bold">Agregar</p>
-                                <IoMdAddCircleOutline
-                                    color="#808080"
-                                    size="30px"
-                                    onMouseOver={({ target }) => (target.style.color = "blue")}
-                                    onMouseOut={({ target }) => (target.style.color = "#808080")}
-                                />
+                <div className="flex justify-end text-right mx-5 ">
+                            <button size="lg" onClick={() => handleModal()}>
+                                <div className="flex gap-1">
+                                    <p className="text-center hover:text-blueEdition hover:font-bold">Agregar</p>
+                                    <IoMdAddCircleOutline
+                                        color="#808080"
+                                        size="30px"
+                                        onMouseOver={({ target }) => (target.style.color = "blue")}
+                                        onMouseOut={({ target }) => (target.style.color = "#808080")}
+                                    />
+                                </div>
+                            </button>
                             </div>
-                        </button>
-                    </div>
-                </div>
+                       
 
-                </div>
-
-                <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
+                <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md mx-5">
                     <div className="w-full overflow-x-auto">
                         <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
                             <thead className="bg-blue-800">
