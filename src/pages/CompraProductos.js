@@ -13,7 +13,6 @@ import { MdDeleteOutline } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io"
 import { toast } from "react-toastify";
 import { formatearDecimales, formatearFecha } from "@/helpers";
-import CajaApi from "./api/CajaApi";
 
 
 const PAGE_SIZE = 10;
@@ -52,8 +51,9 @@ const CompraProductos = ({ }) => {
     const [proveedoresFiltrados, setProveedoresFiltrados] = useState([]);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
     const [proveedorDatos, setProveedorDatos] = useState([]);
-    const [produtosDatos, setProductoDatos] = useState([]);
+    const [productosDatos, setProductoDatos] = useState([]);
     const [produtosDetallesFiltrados, setProductoDetallesFiltrados] = useState([]);
+    const [facturasOrdenadas, setFacturasOrdenadas] = useState([]);
 
     const [valorFiltrado, setValorFiltroInput] = useState("");
     const [filtroInputDetalle, setFiltroInputDetalle] = useState("");
@@ -135,8 +135,11 @@ const CompraProductos = ({ }) => {
             facturaApi.getFacturas()
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
-                    setFacturas(datos?.content);
-                    setTotalPages(datos?.totalPages);
+                    const facturasFiltradas = datos.content.filter((factura) => factura.esCompra === "COMPRA");
+                    setFacturas(facturasFiltradas);
+                    const totalPagesFacturas = facturasFiltradas.map((factura) => factura.totalPages);
+                    setTotalPages(totalPagesFacturas);
+                    console.log(facturasFiltradas);
                 })
                 .catch((error) => {
                     // Manejar el error
@@ -144,8 +147,6 @@ const CompraProductos = ({ }) => {
                 })
         }
     }
-
-
 
     const obtenerProveedores = () => {
 
@@ -248,10 +249,10 @@ const CompraProductos = ({ }) => {
     }
 
     const handleAgregarDetalle = (data) => {
-        if (produtosDatos.id && data.cantidad > 0) {
+        if (productosDatos.id && data.cantidad > 0) {
             const detalleProducto = {
                 cantidad: Number(data.cantidad),
-                producto_id: produtosDatos.id,
+                producto_id: productosDatos.id,
                 servicio_id: 0
             };
             const productoExistente = productosAgregar.find(
@@ -285,7 +286,6 @@ const CompraProductos = ({ }) => {
             pagado: data.estado,
             detalles: productosAgregar
         }
-        console.log(json)
         axios.post(
             api,
             json,
@@ -331,6 +331,7 @@ const CompraProductos = ({ }) => {
 
 
     const handleEditar = (data) => {
+        console.log(facturas)
         console.log(facturaEditar)
         console.log(productos);
         console.log(productosAgregar);
@@ -419,7 +420,7 @@ const CompraProductos = ({ }) => {
 
 
 
-    const convertidorProveedor = (id) => {
+    const formatearProveedor = (id) => {
         const proveedor = proveedores?.find(p => p.id === id);
         return proveedor?.nombre
     }
@@ -469,7 +470,7 @@ const CompraProductos = ({ }) => {
         setNombreProductoInput(producto?.nombre);
         setProductoDatos(producto);
         setProductosFiltrados([]);
-        console.log(produtosDatos);
+        console.log(productosDatos);
     }
 
 
@@ -554,7 +555,7 @@ const CompraProductos = ({ }) => {
                                         paginatedFacturaFiltradas?.map((factura, index) => (
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                                <td>{convertidorProveedor(factura.proveedor_id)}</td>
+                                                <td>{formatearProveedor(factura.proveedor_id)}</td>
                                                 <td >{formatearFecha(factura.fecha)}</td>
                                                 <td >{(factura.pagado)}</td>
                                                 <td >{(factura.precio_total)}</td>
@@ -570,10 +571,10 @@ const CompraProductos = ({ }) => {
                                                 </td>
                                             </tr>
                                         ))
-                                    ) : (paginatedFactura.reverse().map((factura, index) => (
+                                    ) : (paginatedFactura.map((factura, index) => (
                                         <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                            <td>{convertidorProveedor(factura.proveedor_id)}</td>
+                                            <td>{formatearProveedor(factura.proveedor_id)}</td>
                                             <td >{formatearFecha(factura.fecha)}</td>
                                             <td >{(factura.pagado)}</td>
                                             <td >{(factura.precio_total)}</td>
@@ -654,7 +655,7 @@ const CompraProductos = ({ }) => {
 
                 <Modal.Header closeButton>
                     <Modal.Title>
-                        <h1 className="text-3xl font-bold">Factura Nro. {facturaSeleccionada.numero_factura} {convertidorProveedor(facturaSeleccionada.proveedor_id)}</h1>
+                        <h1 className="text-3xl font-bold">Factura Nro. {facturaSeleccionada.numero_factura} {formatearProveedor(facturaSeleccionada.proveedor_id)}</h1>
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>

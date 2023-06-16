@@ -8,7 +8,8 @@ class FacturasApi {
 
     getFacturas = async (page, size) => {
         try {
-            const api = `${process.env.API_URL}api/factura/page?sort=desc`;
+            ///api/factura/page
+            const api = `${process.env.API_URL}api/factura/page`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
                 params: { page, size },
