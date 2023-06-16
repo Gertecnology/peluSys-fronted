@@ -25,6 +25,42 @@ class CajaApi {
         }
     };
 
+    getCajaEmpleado = async (id) => {
+        try {
+            const api = `${process.env.API_URL}api/cajas/cajaDelEmpleado/${id}`;
+            const response = await axios.get(api, {
+                headers: { Authorization: `Bearer ${this.token}` },
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error("Error al obtener las cajas de empleados");
+            }
+        } catch (error) {
+            console.error("Error en la solicitud HTTP:", error);
+            throw error;
+        }
+    };
+
+    getMontoCaja = async (id) => {
+        try {
+            const api = `${process.env.API_URL}api/cajas/montoCaja/${id}`;
+            const response = await axios.get(api, {
+                headers: { Authorization: `Bearer ${this.token}` },
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error("Error al obtener los montos de las cajas del empleado");
+            }
+        } catch (error) {
+            console.error("Error en la solicitud HTTP:", error);
+            throw error;
+        }
+    };
+
 
 }
 

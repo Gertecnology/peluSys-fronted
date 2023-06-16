@@ -154,7 +154,7 @@ const Servicio = ({ }) => {
                 setServicioEditar(undefined);
                 setIsEditar(false);
                 reset();
-
+                setValor("");
             })
 
     }

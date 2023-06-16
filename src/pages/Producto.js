@@ -198,6 +198,9 @@ const Producto = ({ }) => {
             .finally(() => {
                 obtenerProductos();
                 reset();
+                setShowNuevaMarcaModal(false);
+                setShowNuevoProveedorModal(false);
+
             })
 
     }
@@ -246,6 +249,10 @@ const Producto = ({ }) => {
                 setProductoEditar(undefined);
                 setIsEditar(false);
                 setShowDetalleModal(false);
+                setShowNuevaMarcaModal(false);
+                setShowNuevoProveedorModal(false);
+                setValor("");
+
 
 
             })
@@ -395,7 +402,8 @@ const Producto = ({ }) => {
                                 <Form.Select {...register("id_marca", { required: true })}
 
                                 >
-                                    <option defaultValue="" disabled selected hidden>Selecciona una opción</option>
+                                    <option selected key={""} value={""}>Selecciona una opción</option>
+
                                     {marcas?.map((marca) => (
                                         <option key={marca.id} value={marca.id}>{marca.nombre}</option>
                                     ))}
@@ -441,6 +449,7 @@ const Producto = ({ }) => {
                                     required: true
                                 })}
                                 type="number"
+
                                 placeholder="Precio de Venta del producto"
                                 isInvalid={errors.precioVenta}
                             />
@@ -450,7 +459,7 @@ const Producto = ({ }) => {
                             <div className="flex gap-2">
                                 <Form.Select {...register("id_proveedor", { required: true })}
                                 >
-                                    <option value="" disabled selected hidden>Seleccione un Proveedor</option>
+                                    <option selected key={""} value={""}>Selecciona una opción</option>
                                     {proveedores?.map((proveedor) => (
                                         <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
                                     ))}
@@ -710,17 +719,7 @@ const Producto = ({ }) => {
                         <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <Form.Group>
-                            <Form.Label>Timbrado</Form.Label>
-                            <Form.Control
-                                {...registerForm2("timbrado", {
-                                    required: true
-                                })}
-                                type="text"
-                                placeholder="Timbrado del Proveedor"
-                                isInvalid={errorform2.timbrado}
-                            />
-                        </Form.Group>
+
 
                         <Form.Group>
                             <Form.Label>Nombre del Proveedor</Form.Label>
@@ -787,6 +786,19 @@ const Producto = ({ }) => {
 
                             />
                         </Form.Group>
+
+                            <Form.Group>
+                            <Form.Label>Timbrado</Form.Label>
+                            <Form.Control
+                                {...registerForm2("timbrado", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Timbrado del Proveedor"
+                                isInvalid={errorform2.timbrado}
+                            />
+                        </Form.Group>
+
 
 
                     </Modal.Body>

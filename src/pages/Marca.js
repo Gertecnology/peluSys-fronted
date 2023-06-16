@@ -139,6 +139,8 @@ const Marca = ({ }) => {
                 setMarcaEditar(undefined);
                 setIsEditar(false);
                 reset();
+                setValor("");
+
 
 
             })
@@ -203,7 +205,7 @@ const Marca = ({ }) => {
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="secondary" onClick={handleModal}>
+                        <Button variant="secondary" onClick={() => { handleModal(), reset() }}>
                             Cerrar
                         </Button>
                         <Button variant="primary" type="submit">

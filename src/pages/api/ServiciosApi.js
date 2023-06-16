@@ -10,9 +10,10 @@ class ServicioApi {
 
     getServicios = async (page, size) => {
         try {
-            const api = `${process.env.API_URL}api/servicios/page`;
+            ///servicios/page?page=0&size=1&sort=string
+            const api = `${process.env.API_URL}api/servicios/page?page=${page}&size=${size}&sort=desc`;
             const response = await axios.get(api, {
-                headers: { Authorization: `Bearer ${this.token}` },
+                headers: { Authorization: `Bearer ${this.token}`},
                 params: { page, size },
             });
 

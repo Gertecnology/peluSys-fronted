@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import { getFechaActual } from "@/helpers";
 import { FiEdit2 } from "react-icons/fi";
 import { AiOutlineDelete } from "react-icons/ai";
+
 import { FilePond, registerPlugin } from 'react-filepond';
 
 import moment from "moment"
@@ -25,13 +26,14 @@ import { IoMdAddCircleOutline, IoMdSearch } from "react-icons/io";
 registerPlugin(FilePondPluginImagePreview);
 
 
+
 const Empleados = ({ }) => {
     const { user } = useContext(AuthContext);
     const [showModal, setShowModal] = useState(false);
     const [showSiguienteModal, setShowSiguienteModal] = useState(false)
     const { register, handleSubmit, formState: { errors, isValid }, setValue, watch, getValues, clearErrors,
     } = useForm();
-    const { register: registerUser, handleSubmit: handleSubmitUser, watch: watchUser, formState: { errors: errorsUser } } = useForm();
+    const { register: registerUser, handleSubmit: handleSubmitUser, watch: watchUser ,formState: { errors: errorsUser } } = useForm();
     const [cambiarModalError, setCambiarModalError] = useState(false);
     const [empleados, setEmpleados] = useState([])
     const [isEditar, setIsEditar] = useState(false)
@@ -39,14 +41,12 @@ const Empleados = ({ }) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [idEliminar, setIdEliminar] = useState(-1)
     const [datosForm, setDatosForm] = useState({})
-    const [pagina, setPagina] = useState({ numero: 0, size: 20 })
-    const [photo, setPhoto] = useState(undefined)
 
     const nacionalidades = getCountries().map(country => country.name);
     const roles = {
         "Administrador": "ROLE_ADMINISTRADOR",
         "Gerente": "ROLE_GERENTE",
-        "Peluquero": "ROLE_PELUQUERO",
+        "Peluquero": "ROL_PELUQUERO",
         "Recepcionista": "ROLE_RECEPCIONISTA",
         "RRHH": "ROLE_RRHH",
         "Usuario": "ROLE_USER"
@@ -72,34 +72,16 @@ const Empleados = ({ }) => {
 
     useEffect(() => {
         obtenerDatos();
-    }, [])
+    },[])
 
-    const handlePhoto = (files) => {
-        const file = files[0].file;
-        const reader = new FileReader();
-
-        reader.onloadend = () => {
-            const base64String = reader.result;
-            console.log(base64String)
-            setPhoto(base64String)
-        };
-        reader.readAsDataURL(file);
-
-    }
 
     const obtenerDatos = () => {
         if (!user) return
         const api = `${process.env.API_URL}api/empleado/`;
-        const token = user.token;
-        axios.get(api, {
-            headers: { "Authorization": `Bearer ${token}` },
-            params: {
-                page: pagina.numero,
-                size: pagina.size
-            }
-        })
+        const token = user.accessToken;
+        axios.get(api, {} ,{ headers: { "Authorization": `Bearer ${token}` } })
             .then(res => {
-                setEmpleados(res.data.content)
+               setEmpleados(res.data.content)
             })
             .catch((error) => {
                 console.log(error)
@@ -108,58 +90,34 @@ const Empleados = ({ }) => {
     }
 
     const cambiarModal = (data) => {
-        setDatosForm({ ...data })
+        setDatosForm({...data})
         setShowModal(false);
         setShowSiguienteModal(true);
     }
 
     const handleModal = () => {
-        // Object.keys(getValues()).forEach(key => setValue(key, ""))
+        Object.keys(getValues()).forEach(key => setValue(key, ""))
         clearErrors()
         setShowModal(!showModal);
 
     };
 
     const formSubmit = (data) => {
-
+        
         const api = `${process.env.API_URL}api/empleado/nuevo`;
         console.log(api)
-        const token = user.token
+        const token = user.accessToken
         setShowSiguienteModal(false)
         Object.keys(data).forEach((key) => data[key] = data[key] === null ? "" : data[key])
-        if (!photo) return
-        const jsonData = {
-            profileImageBase64: photo,
-            nombre: datosForm.nombre,
-            apellido: datosForm.apellido,
-            cedula: datosForm.cedula,
-            fechaNacimiento: datosForm.fechaNacimiento,
-            fechaContratacion: moment().format("YYYY-MM-DD").toString(),
-            fechaAlta: "1980-01-01",
-            direccion: datosForm.direccion,
-            salario: Number(datosForm.salario),
-            aportePatronal: 0,
-            aporteObrero: 0,
-            sanguineo: datosForm.sanguineo,
-            cargo: datosForm.cargo,
-            username: data.username,
-            email: data.email,
-            password: data.password,
-            roles: data.roles,
-        }
+        console.log({...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual(),fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0, salario:Number(datosForm["salario"]),photo:[""]})
 
         axios.post(
             api,
-            jsonData,
-            {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            }
+            {...data,...datosForm, fotoPerfil:"",fechaContratacion: getFechaActual() ,fechaAlta:"1970-01-01",aportePatronal:0,aporteObrero:0, salario:Number(datosForm["salario"]),photo:[""]} ,
+            { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
                 toast.success('Empleado Agregado');
-                obtenerDatos()
             })
             .catch((error) => {
                 console.log(error)
@@ -388,16 +346,14 @@ const Empleados = ({ }) => {
                                             isInvalid={errors.salario}
                                         />
                                     </Form.Group>
-                                </Col>
-                            </Row>
-                            <Row>
-                                <Col>
+
                                     <Form.Group>
                                         <Form.Label>Foto de perfil</Form.Label>
-
-                                        <FilePond
-                                            allowMultiple={false}
-                                            onupdatefiles={handlePhoto}
+                                        <Form.Control
+                                            {...register("fotoPerfil", { required: false })}
+                                            type="file"
+                                            accept="image/*"
+                                            isInvalid={errors.fotoPerfil}
                                         />
                                     </Form.Group>
                                 </Col>
@@ -421,107 +377,107 @@ const Empleados = ({ }) => {
 
 
             <Modal size="lg" show={showSiguienteModal} onHide={() => setShowSiguienteModal(false)}>
-                <Form onSubmit={handleSubmitUser(formSubmit)}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Crear un usuario para el Empleado </Modal.Title>
-                    </Modal.Header>
+            <Form onSubmit={handleSubmitUser(formSubmit)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Crear un usuario para el Empleado </Modal.Title>
+                </Modal.Header>
 
-                    <Modal.Body>
-                        <Container>
-                            <Row>
-                                <Col>
-                                    <Form.Group>
-                                        <Form.Label>Nombre de usuario</Form.Label>
-                                        <Form.Control
-                                            {...registerUser("username", {
-                                                required: true
-                                            })}
-                                            type="text"
-                                            placeholder="Nombre de usuario"
-                                            isInvalid={errorsUser.username}
-                                        />
-                                    </Form.Group>
+                <Modal.Body>
+                    <Container>
+                        <Row>
+                            <Col>
+                                <Form.Group>
+                                    <Form.Label>Nombre de usuario</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("username", {
+                                            required: true
+                                        })}
+                                        type="text"
+                                        placeholder="Nombre de usuario"
+                                        isInvalid={errorsUser.username}
+                                    />
+                                </Form.Group>
 
-                                    <Form.Group>
-                                        <Form.Label>Email</Form.Label>
-                                        <Form.Control
-                                            {...registerUser("email", {
-                                                required: true,
-                                                pattern: /^\S+@\S+$/i //validar que sea un correo electrónico válido
-                                            })}
-                                            type="text"
-                                            placeholder="Email"
-                                            isInvalid={errors.email}
-                                        />
-                                    </Form.Group>
+                                <Form.Group>
+                                    <Form.Label>Email</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("email", {
+                                            required: true,
+                                            pattern: /^\S+@\S+$/i //validar que sea un correo electrónico válido
+                                        })}
+                                        type="text"
+                                        placeholder="Email"
+                                        isInvalid={errors.email}
+                                    />
+                                </Form.Group>
 
-                                    <Form.Group>
-                                        <Form.Label>Contraseña</Form.Label>
-                                        <Form.Control
-                                            {...registerUser("password", {
-                                                required: true,
-                                                minLength: 6 //validar que la contraseña tenga al menos 8 caracteres
-                                            })}
-                                            type="password"
-                                            placeholder="Contraseña"
-                                            isInvalid={errorsUser.password}
-                                        />
-                                    </Form.Group>
+                                <Form.Group>
+                                    <Form.Label>Contraseña</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("password", {
+                                            required: true,
+                                            minLength: 6 //validar que la contraseña tenga al menos 8 caracteres
+                                        })}
+                                        type="password"
+                                        placeholder="Contraseña"
+                                        isInvalid={errorsUser.password}
+                                    />
+                                </Form.Group>
 
-                                    <Form.Group>
-                                        <Form.Label>Confirmar contraseña</Form.Label>
-                                        <Form.Control
-                                            {...registerUser("confirmPassword", {
-                                                required: true,
-                                                validate: (value) => value === watchUser("password") //validar que la confirmación de contraseña sea igual a la contraseña ingresada
-                                            })}
-                                            type="password"
-                                            placeholder="Confirmar contraseña"
-                                            isInvalid={errorsUser.confirmPassword}
-                                        />
-                                    </Form.Group>
-                                </Col>
-                                <Col>
+                                <Form.Group>
+                                    <Form.Label>Confirmar contraseña</Form.Label>
+                                    <Form.Control
+                                        {...registerUser("confirmPassword", {
+                                            required: true,
+                                            validate: (value) => value === watchUser("password") //validar que la confirmación de contraseña sea igual a la contraseña ingresada
+                                        })}
+                                        type="password"
+                                        placeholder="Confirmar contraseña"
+                                        isInvalid={errorsUser.confirmPassword}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col>
 
-                                    <Form.Group>
-                                        <Form.Label>
-                                            Roles
-                                        </Form.Label>
+                                <Form.Group>
+                                    <Form.Label>
+                                        Roles
+                                    </Form.Label>
 
-                                        <div>
-                                            {Object.keys(roles).map((key) => (
-                                                <Form.Check
-                                                    onChange={(selected) => {
-                                                        setValue("roles", selected)
-                                                        console.log(watch("roles"))
-                                                    }}
-                                                    isInvalid={errorsUser.roles}
-                                                    key={key}
-                                                    type="checkbox"
-                                                    label={key}
-                                                    value={roles[key]}
-                                                    {...registerUser("roles", { required: true })}
-                                                />
-                                            ))}
-                                        </div>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                        </Container>
-
-
+                                    <div>
+                                        {Object.keys(roles).map((key) => (
+                                            <Form.Check
+                                                onChange={(selected) => {
+                                                    setValue("roles", selected)
+                                                    console.log(watch("roles"))
+                                                }}
+                                                isInvalid={errorsUser.roles}
+                                                key={key}
+                                                type="checkbox"
+                                                label={key}
+                                                value={roles[key]}
+                                                {...registerUser("roles", { required: true })}
+                                            />
+                                        ))}
+                                    </div>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Container>
 
 
-                    </Modal.Body>
 
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => { setShowSiguienteModal(false) }} >
-                            Cancelar
-                        </Button>
 
-                        <Button variant="success" type="submit">Guardar</Button>
-                    </Modal.Footer>
-                </Form>
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => { setShowSiguienteModal(false) }} >
+                        Cancelar
+                    </Button>
+
+                    <Button variant="success" type="submit">Guardar</Button>
+                </Modal.Footer>
+                </Form>                                 
             </Modal>
 
 
@@ -566,47 +522,41 @@ const Empleados = ({ }) => {
 
                 </div>
 
-                <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
-                    <div className="w-full overflow-x-auto">
-                        <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
-                            <thead className="bg-blue-800">
-                                <tr>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">Nombre</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">Apellido</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">RUC</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">Cargo</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
+                <div className="px-5 mt-2 h-96 overflow-y-scroll">
+                    <Table bordered hover size="sm" className="bg-white mt-10">
+                        <thead className="sticky top-0 bg-white">
+                            <tr>
+                                <th>Cedula</th>
+                                <th>Nombre</th>
+                                <th>Apellido</th>
+                                <th>Cargo</th>
+                                <th className="w-1/12">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {empleados?.map((empleado, index) => (
+                                <tr key={index}>
+                                    <td>{empleado.cedula}</td>
+                                    <td>{empleado.nombre}</td>
+                                    <td>{empleado.apellido}</td>
+                                    <td className="">{empleado.cargo}</td>
+                                    <td>
+                                        <div className="flex gap-2 ">
+                                            <Button size="sm" variant="link" onClick={() => handleSetEditar(cliente.id)}>
+                                                <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                            <Button size="sm" variant="link" onClick={() => handleSetDelete(cliente.id)}>
+                                                <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {(empleados?.map((empleado, index) => (
-                                    <tr key={index} className="hover:bg-gray-50">
-                                        <td className="ps-3">{empleado.nombre}</td>
-                                        <td>{empleado.apellido}</td>
-                                        <td>{empleado.cedula}</td>
-                                        <td>{empleado.cargo}</td>
-                                        <td>
-                                            <div className="flex gap-2 ">
-                                                <Button size="sm" variant="link" onClick={() => handleSetEditar(empleado.id)}>
-                                                    <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
-                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                                </Button>
-                                                <Button size="sm" variant="link" onClick={() => handleSetDelete(empleado.id)}>
-                                                    <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
-                                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )))}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                        </tbody>
+                    </Table>
                 </div>
-
-
-
-
             </div>
         </Layout>
     );

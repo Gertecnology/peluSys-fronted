@@ -141,6 +141,8 @@ const Proveedor = ({ }) => {
                 setProveedorEditar(undefined);
                 setIsEditar(false);
                 reset();
+                setValor("");
+
 
 
             })
@@ -196,16 +198,18 @@ const Proveedor = ({ }) => {
                     <Modal.Body>
 
                         <Form.Group>
-                            <Form.Label>Timbrado</Form.Label>
+                            <Form.Label>Nombre</Form.Label>
+
                             <Form.Control
-                                {...register("timbrado", {
+                                {...register("nombre", {
                                     required: true
                                 })}
                                 type="text"
-                                placeholder="Timbrado del Proveedor"
-                                isInvalid={errors.timbrado}
+                                placeholder="Nombre del Proveedor"
+                                isInvalid={errors.nombre}
                             />
                         </Form.Group>
+
 
                         <Form.Group>
                             <Form.Label>Ruc</Form.Label>
@@ -219,17 +223,6 @@ const Proveedor = ({ }) => {
                             />
                         </Form.Group>
 
-                        <Form.Group>
-                            <Form.Label>Nombre</Form.Label>
-                            <Form.Control
-                                {...register("nombre", {
-                                    required: true
-                                })}
-                                type="text"
-                                placeholder="Nombre del Proveedor"
-                                isInvalid={errors.nombre}
-                            />
-                        </Form.Group>
 
                         <Form.Group>
                             <Form.Label>Telefono</Form.Label>
@@ -259,7 +252,8 @@ const Proveedor = ({ }) => {
                             <Form.Label>E-mail</Form.Label>
                             <Form.Control
                                 {...register("email", {
-                                    required: true
+                                    required: false
+
                                 })}
                                 type="text"
                                 placeholder="E-mail del Proveedor"
@@ -276,6 +270,18 @@ const Proveedor = ({ }) => {
                                 type="text"
                                 placeholder="Pais del Proveedor"
                                 isInvalid={errors.pais}
+                            />
+                        </Form.Group>
+
+                        <Form.Group>
+                            <Form.Label>Timbrado Actual</Form.Label>
+                            <Form.Control
+                                {...register("timbrado", {
+                                    required: false
+                                })}
+                                type="text"
+                                placeholder="Timbrado del Proveedor"
+                                isInvalid={errors.timbrado}
                             />
                         </Form.Group>
 

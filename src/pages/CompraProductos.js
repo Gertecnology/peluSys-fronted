@@ -1,7 +1,8 @@
 import Layout from "@/layout/Layout";
 import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { set, useForm, useWatch } from "react-hook-form";
+
 import { useRouter } from 'next/router'
 import FacturasApi from "./api/FacturasApi";
 import ProveedorApi from "./api/ProveedorApi";
@@ -18,6 +19,9 @@ import { formatearDecimales, formatearFecha } from "@/helpers";
 const PAGE_SIZE = 10;
 
 const CompraProductos = ({ }) => {
+    const { user } = useContext(AuthContext);
+
+
     const ruta = useRouter();
 
     const [facturas, setFacturas] = useState([]);
@@ -25,24 +29,8 @@ const CompraProductos = ({ }) => {
     const [proveedores, setProveedores] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [totalPagesFilter, setTotalPagesFilter] = useState(0);
 
-
-    const { user } = useContext(AuthContext);
-
-    useEffect(() => {
-        obtenerFacturas();
-        obtenerProductos();
-        obtenerProveedores();
-    }, [user]);
-
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
-    const paginatedFactura = facturas?.slice(
-        currentPage * PAGE_SIZE,
-        (currentPage + 1) * PAGE_SIZE
-    );
 
     const [showModal, setShowModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
@@ -50,6 +38,9 @@ const CompraProductos = ({ }) => {
     const [cargando, setCargando] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showDetalleModal, setShowDetalleModal] = useState(false);
+    const [isFiltro, setIsFiltro] = useState(false);
+    const [isFiltroDetalle, setIsFiltroDetalle] = useState(false);
+
     const formDos = useForm();
     const [idEliminar, setIdEliminar] = useState(-1)
     const [facturaEditar, setFacturaEditar] = useState(undefined);
@@ -61,8 +52,20 @@ const CompraProductos = ({ }) => {
     const [facturaSeleccionada, setFacturaSeleccionada] = useState([]);
     const [facturaSeleccionadaDetalle, setFacturaSeleccionadaDetalle] = useState([]);
     const [productosAgregar, setProductosAgregar] = useState([]);
-    const [valor, setValor] = useState("");
+    const [proveedoresFiltrados, setProveedoresFiltrados] = useState([]);
+    const [productosFiltrados, setProductosFiltrados] = useState([]);
+    const [proveedorDatos, setProveedorDatos] = useState([]);
+    const [productosDatos, setProductoDatos] = useState([]);
+    const [produtosDetallesFiltrados, setProductoDetallesFiltrados] = useState([]);
+    const [facturasOrdenadas, setFacturasOrdenadas] = useState([]);
+
+    const [valorFiltrado, setValorFiltroInput] = useState("");
+    const [filtroInputDetalle, setFiltroInputDetalle] = useState("");
     const [valorFiltro, setValorFiltro] = useState("");
+    const [nombreProveedorInput, setNombreProveedorInput] = useState("");
+    const [nombreProductoInput, setNombreProductoInput] = useState("");
+    const [valorDefecto, setValorDefecto] = useState("");
+
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -88,19 +91,48 @@ const CompraProductos = ({ }) => {
 
 
 
-    useEffect(() => {
-        handleFiltrar(valorFiltro)
 
-    }, [valorFiltro])
 
     useEffect(() => {
-        if (valor.length > 3) {
-            handleFiltrarInput(valor)
-        }
-        else {
+        obtenerFacturas();
+        obtenerProductos();
+        obtenerProveedores();
+        console.log(isFiltro);
+        console.log(isBuscar)
+        console.log(facturas);
+        console.log(paginatedFactura)
+    }, [user]);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const paginatedFactura = facturas?.slice(
+        currentPage * PAGE_SIZE,
+        (currentPage + 1) * PAGE_SIZE
+    );
+    const paginatedFacturaFiltradas = facturasFiltradas?.slice(
+        currentPage * PAGE_SIZE,
+        (currentPage + 1) * PAGE_SIZE
+    );
+
+
+
+
+    useEffect(() => {
+        if (valorFiltrado.length === 0) {
             actualizar();
         }
-    }, [valor])
+    }, [valorFiltrado])
+
+
+    useEffect(() => {
+        if (filtroInputDetalle.length === 0) {
+            setIsFiltroDetalle(false);
+        }
+    }, [filtroInputDetalle]);
+
+
 
     const obtenerFacturas = () => {
         if (user && user.token) {
@@ -109,8 +141,12 @@ const CompraProductos = ({ }) => {
             facturaApi.getFacturas()
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
-                    setFacturas(datos?.content);
-                    setTotalPages(datos?.totalPages);
+                    const facturasFiltradas = datos.content.filter((factura) => factura.esCompra === "COMPRA");
+                    setFacturas(facturasFiltradas);
+                    const totalPagesFacturas = facturasFiltradas.map((factura) => factura.totalPages);
+                    setTotalPages(totalPagesFacturas);
+                    console.log(facturasFiltradas);
+
                 })
                 .catch((error) => {
                     // Manejar el error
@@ -118,7 +154,6 @@ const CompraProductos = ({ }) => {
                 })
         }
     }
-
 
 
     const obtenerProveedores = () => {
@@ -154,9 +189,10 @@ const CompraProductos = ({ }) => {
     }
 
 
-
     const actualizar = () => {
-        valor === "" ? setIsBuscar(false) : null;
+        valorFiltrado === "" ? setIsFiltro(false) : null;
+        isBuscar ? handleFiltrar(valorFiltro) : null;
+
     }
 
 
@@ -179,18 +215,38 @@ const CompraProductos = ({ }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {detalles.map((detalle, index) => (
-                            <tr key={index}>
-                                <td>{formatearDetalleProducto(detalle.producto_id)}</td>
-                                <td>{detalle.cantidad}</td>
-                                <td>
-                                    <Button size="sm" variant="link" onClick={() => handleSetEliminarDetalle(detalle.producto_id)}>
-                                        <MdDeleteOutline color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
-                                            onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
+                        {isFiltroDetalle ? (
+
+                            produtosDetallesFiltrados.reverse().map((detalle, index) => (
+                                <tr key={index}>
+                                    <td>{formatearDetalleProducto(detalle.producto_id)}</td>
+                                    <td>{detalle.cantidad}</td>
+                                    <td>
+                                        <Button size="sm" variant="link" onClick={() => handleSetEliminarDetalle(detalle.producto_id)}>
+                                            <MdDeleteOutline color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))
+
+
+                        ) :
+                            (
+                                detalles.map((detalle, index) => (
+                                    <tr key={index}>
+                                        <td>{formatearDetalleProducto(detalle.producto_id)}</td>
+                                        <td>{detalle.cantidad}</td>
+                                        <td>
+                                            <Button size="sm" variant="link" onClick={() => handleSetEliminarDetalle(detalle.producto_id)}>
+                                                <MdDeleteOutline color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
+                                                    onMouseOut={({ target }) => target.style.color = "#808080"} />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+
                     </tbody>
                 </Table>
             </div>
@@ -203,10 +259,11 @@ const CompraProductos = ({ }) => {
     }
 
     const handleAgregarDetalle = (data) => {
-        if (data.productoId && data.cantidad > 0) {
+        if (productosDatos.id && data.cantidad > 0) {
             const detalleProducto = {
                 cantidad: Number(data.cantidad),
-                producto_id: Number(data.productoId),
+                producto_id: productosDatos.id,
+
                 servicio_id: 0
             };
             const productoExistente = productosAgregar.find(
@@ -226,6 +283,8 @@ const CompraProductos = ({ }) => {
             ...data,
             cantidad: ""
         });
+        setNombreProductoInput([]);
+
     }
 
     const formSubmit = (data) => {
@@ -234,12 +293,13 @@ const CompraProductos = ({ }) => {
         handleModal();
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
         const json = {
-            proveedorId: Number(data.proveedorId),
+            proveedorId: proveedorDatos.id,
+
             numeroFactura: data.factura,
             pagado: data.estado,
             detalles: productosAgregar
         }
-        console.log(json)
+
         axios.post(
             api,
             json,
@@ -260,6 +320,9 @@ const CompraProductos = ({ }) => {
                 reset();
                 resetDetalle();
                 setProductosAgregar([]);
+                setNombreProveedorInput([]);
+                setNombreProductoInput([]);
+
             })
 
 
@@ -269,10 +332,13 @@ const CompraProductos = ({ }) => {
 
     const handleSetEditar = (id) => {
         const factura = facturas.find(s => s.id === id);
+        console.log(factura);
         setFacturaEditar(factura);
         const proveedor = proveedores?.find(p => p.id === factura.proveedor_id);
+        setNombreProveedorInput(proveedor.nombre);
+        setProveedorDatos(proveedor);
         setValue("factura", factura.numero_factura);
-        setValue("proveedorId", proveedor.id);
+
         setValue("estado", factura.pagado);
         setProductosAgregar(...productosAgregar, factura.detalles);
         handleModal();
@@ -281,29 +347,38 @@ const CompraProductos = ({ }) => {
 
 
     const handleEditar = (data) => {
+        console.log(facturas)
         console.log(facturaEditar)
+        console.log(productos);
+        console.log(productosAgregar);
         handleModal();
         const api = `${process.env.API_URL}api/proveedores/actualizarCompra/${facturaEditar.id}`;
         const json = {
-            data,
+            proveedorId: proveedorDatos.id,
+            numeroFactura: data.factura,
+            pagado: data.estado,
             detalles: productosAgregar
         }
         console.log(json)
-        axios.post(api, {
-            id: facturaEditar.id,
+        axios.post(api,
             json,
-        },
+
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then(() => {
                 toast.success('Factura Actualizado');
                 obtenerFacturas();
+                setShowDetalleModal(false);
+
 
 
             })
             .catch((error) => {
                 console.log(error)
                 toast.error('No se pudo actualizar la Factura!!!"');
+                setShowDetalleModal(false);
+
+
 
             })
             .finally(() => {
@@ -312,15 +387,20 @@ const CompraProductos = ({ }) => {
                 reset();
                 resetDetalle();
                 setProductosAgregar([]);
-                setShowDetalleModal(false);
+                setNombreProveedorInput([]);
+                setNombreProductoInput([]);
+
             })
 
     }
 
 
 
-    const handleSelectChange = (e) => {
-        setValorFiltro(e.target.value);
+    const handleSelectChange = (event) => {
+        const valor = event.target.value;
+        setValorFiltro(valor);
+        handleFiltrar(valor);
+
     };
 
     const handleFiltrar = (estado) => {
@@ -329,10 +409,12 @@ const CompraProductos = ({ }) => {
         setCargando(true);
         setIsBuscar(true);
         const facturaApi = new FacturasApi(user.token);
-        facturaApi.filterFacturasCompra(valor)
+        facturaApi.filterFacturasCompraPage(valor)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                setFacturasFiltradas(datos);
+                setFacturasFiltradas(datos?.content);
+                setTotalPagesFilter(datos?.totalPages)
+
             })
             .catch((error) => {
                 // Manejar el error
@@ -344,12 +426,24 @@ const CompraProductos = ({ }) => {
         }, 500);
     }
 
-    const handleFiltrarInput = (filtro) => {
-        const filtrado = facturasFiltradas.filter(factura => factura.numero_factura.includes(filtro))
-        setFacturasFiltradas(filtrado);
+    const handleFiltrarInput = (event) => {
+        setIsFiltro(true)
+        const value = event.target.value;
+        setValorFiltroInput(value);
+        if (isFiltro) {
+            const filtrado = facturas?.filter(factura => factura.numero_factura.includes(value))
+            setFacturasFiltradas(filtrado);
+        }
+        else if (isFiltro && isBuscar) {
+            const filtrado = facturasFiltradas?.filter(factura => factura.numero_factura.includes(value))
+            setFacturasFiltradas(filtrado);
+        }
     }
 
-    const convertidorProveedor = (id) => {
+
+
+    const formatearProveedor = (id) => {
+
         const proveedor = proveedores?.find(p => p.id === id);
         return proveedor?.nombre
     }
@@ -369,107 +463,46 @@ const CompraProductos = ({ }) => {
         return producto?.nombre;
     }
 
+    const handleInputProveedorChange = (event) => {
+        const value = event.target.value;
+        setNombreProveedorInput(value);
+        // Filtra los elementos basado en el valor de búsqueda
+        const listaProveedoresFiltrados = proveedores.filter(proveedor => proveedor?.nombre.toLowerCase().includes(value.toLowerCase()));
+        setProveedoresFiltrados(listaProveedoresFiltrados)
+    };
+
+
+    const handleClickProveedorRow = (id) => {
+        const proveedor = proveedores.find(c => c.id === id);
+        setNombreProveedorInput(proveedor?.nombre);
+        setProveedorDatos(proveedor);
+        setProveedoresFiltrados([]);
+        console.log(proveedorDatos);
+    }
+
+    const handleInputProductoChange = (event) => {
+        const value = event.target.value;
+        setNombreProductoInput(value);
+        const listaProductosFiltrados = productos.filter(producto => producto?.nombre.toLowerCase().includes(value.toLowerCase()));
+        setProductosFiltrados(listaProductosFiltrados);
+
+    }
+
+    const handleClickProductoRow = (id) => {
+        const producto = productos.find(c => c.id === id);
+        setNombreProductoInput(producto?.nombre);
+        setProductoDatos(producto);
+        setProductosFiltrados([]);
+        console.log(productosDatos);
+    }
+
+
+
+
 
 
     return (
         <Layout pagina={"Compra de Productos"} titulo={"CRUD Compras Producto"} ruta={ruta.pathname}>
-
-            <Modal size="xl" show={showModal} onHide={handleModal}>
-                <Form
-                    onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
-                >
-                    <Modal.Header>
-                        <Modal.Title> {isEditar ? "Editar Factura de Compra" : "Comprar Producto(s)"}</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-
-                        <Form.Group>
-                            <Form.Label>Proveedor</Form.Label>
-                            <Form.Select {...register("proveedorId", { required: true })}
-                            >
-                                <option defaultValue="" disabled selected hidden>Seleccione un Proveedor</option>
-
-                                {proveedores?.map((proveedor) => (
-                                    <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-
-                        <Form.Group>
-                            <Form.Label>Número de Factura</Form.Label>
-                            <Form.Control
-                                {...register("factura", {
-                                    required: true
-                                })}
-                                type="text"
-                                placeholder="Número de Factura"
-                                isInvalid={errors.factura}
-                            />
-                        </Form.Group>
-
-
-                        <Form.Group>
-                            <Form.Label>Estado de la Factura </Form.Label>
-                            <Form.Select {...register("estado", { required: true })}
-                            >
-                                <option value="" disabled selected>Seleccione un Estado</option>
-
-                                {estado?.map((estado) => (
-                                    <option key={estado.id} value={estado.value}>{estado.value}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-
-                        <Form.Group>
-                            <Form.Label>Seleccione un Producto</Form.Label>
-                            <Form.Select {...registerDetalle("productoId")}
-                            >
-                                <option disabled selected hidden>Seleccione un Producto</option>
-
-                                {productos?.map((producto) => (
-                                    <option key={producto.id} value={producto.id}>{producto.nombre}</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-
-
-
-
-                        <Form.Group>
-                            <Form.Label>Cantidad a Comprar</Form.Label>
-                            <Form.Control
-                                {...registerDetalle("cantidad")}
-                                type="number"
-                                placeholder="Cantidad del Producto"
-                                isInvalid={errorsDetalle.cantidad}
-                            />
-                        </Form.Group>
-
-
-                        {/* Botón para agregar el detalle de factura */}
-                        <div className="mt-2 ml-1">
-                            <Button variant="success" onClick={handleSubmitDetalle(handleAgregarDetalle)}>
-                                Agregar Detalle
-                            </Button>
-                        </div>
-
-
-                        <DetallesTabla detalles={productosAgregar} />
-
-
-
-                    </Modal.Body>
-                    <Modal.Footer>
-
-                        <Button variant="secondary" onClick={() => { handleModal(), reset(), resetDetalle(), setProductosAgregar([]), setShowDetalleModal(false) }}>
-                            Cerrar
-                        </Button>
-                        <Button variant="primary" type="submit">
-                            {isEditar ? "Terminar Edición" : "Guardar"}
-                        </Button>
-                    </Modal.Footer>
-                </Form>
-            </Modal>
 
 
             <div className="block">
@@ -478,7 +511,8 @@ const CompraProductos = ({ }) => {
                         <div className="w-1/4">
                             <Form.Group>
                                 <Form.Select value={valorFiltro} onChange={handleSelectChange}>
-                                    <option disabled selected hidden>Filtro</option>
+                                    <option value={valorDefecto} disabled selected>Seleccione un Filtro</option>
+
                                     {opciones?.map((opcion) => (
                                         <option key={opcion.id} value={opcion.value}>{opcion.value}</option>
                                     ))}
@@ -487,9 +521,10 @@ const CompraProductos = ({ }) => {
                         </div>
                         <div className="w-3/4">
                             <Form.Control
-                                placeholder="Has tu busqueda aquí"
-                                value={valor}
-                                onChange={e => setValor(e.target.value)}
+                                placeholder="Buscar Ej.: Nombre del Proveedor"
+                                value={valorFiltrado}
+                                onChange={handleFiltrarInput}
+
                             />
                         </div>
                     </div>
@@ -543,17 +578,17 @@ const CompraProductos = ({ }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {isBuscar ? (
-                                        facturasFiltradas?.map((factura, index) => (
+                                    {isBuscar || isFiltro ? (
+                                        paginatedFacturaFiltradas?.map((factura, index) => (
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                                <td>{convertidorProveedor(factura.proveedor_id)}</td>
+                                                <td>{formatearProveedor(factura.proveedor_id)}</td>
+
                                                 <td >{formatearFecha(factura.fecha)}</td>
                                                 <td >{(factura.pagado)}</td>
                                                 <td >{(factura.precio_total)}</td>
                                                 <td >{factura.iva_total5 === 0 ? "-" : formatearDecimales(factura.iva_total5, 4)}</td>
                                                 <td >{factura.iva_total10 === 0 ? "-" : formatearDecimales(factura.iva_total10, 4)}</td>
-
 
                                                 <td>
                                                     <div className="flex gap-2 ">
@@ -568,7 +603,8 @@ const CompraProductos = ({ }) => {
                                     ) : (paginatedFactura.map((factura, index) => (
                                         <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                            <td>{convertidorProveedor(factura.proveedor_id)}</td>
+                                            <td>{formatearProveedor(factura.proveedor_id)}</td>
+
                                             <td >{formatearFecha(factura.fecha)}</td>
                                             <td >{(factura.pagado)}</td>
                                             <td >{(factura.precio_total)}</td>
@@ -649,7 +685,8 @@ const CompraProductos = ({ }) => {
 
                 <Modal.Header closeButton>
                     <Modal.Title>
-                        <h1 className="text-3xl font-bold">Factura Nro. {facturaSeleccionada.numero_factura} {convertidorProveedor(facturaSeleccionada.proveedor_id)}</h1>
+                        <h1 className="text-3xl font-bold">Factura Nro. {facturaSeleccionada.numero_factura} {formatearProveedor(facturaSeleccionada.proveedor_id)}</h1>
+
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -733,6 +770,137 @@ const CompraProductos = ({ }) => {
 
                 </Modal.Body>
             </Modal>
+
+            <Modal size="xl" show={showModal} onHide={handleModal}>
+                <Form
+                    onSubmit={handleSubmit(isEditar ? handleEditar : formSubmit)}
+                >
+                    <Modal.Header>
+                        <Modal.Title> {isEditar ? "Editar Factura de Compra" : "Cargar Factura(s) de compra(s) de Producto(s)"}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+
+                        <div className="flex flex-col">
+                            <div>
+                                <Form.Group>
+                                    <Form.Label>Nombre del Proveedor</Form.Label>
+                                    <Form.Control
+                                        {...register("proveedor", {
+                                            required: true
+                                        })}
+                                        type="text"
+                                        placeholder="Nombre del Proveedor"
+                                        isInvalid={errors.proveedor}
+                                        value={nombreProveedorInput}
+                                        onChange={handleInputProveedorChange}
+                                    />
+                                </Form.Group>
+                            </div>
+
+                            <div className="fixed my-20 shadow z-50 bg-white w-80">
+                                {nombreProveedorInput && proveedoresFiltrados.length > 0 && (
+                                    <ul>
+                                        {proveedoresFiltrados.map((proveedor) => (
+                                            <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickProveedorRow(proveedor.id)} key={proveedor.id}>{proveedor.nombre}</li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                            </div>
+                        </div>
+
+
+                        <Form.Group>
+                            <Form.Label>Número de Factura</Form.Label>
+                            <Form.Control
+                                {...register("factura", {
+                                    required: true
+                                })}
+                                type="text"
+                                placeholder="Número de Factura"
+                                isInvalid={errors.factura}
+                            />
+                        </Form.Group>
+
+
+                        <Form.Group>
+                            <Form.Label>Estado de la Factura </Form.Label>
+                            <Form.Select {...register("estado", { required: true })}
+                            >
+                                <option value="" disabled selected>Seleccione un Estado</option>
+
+                                {estado?.map((estado) => (
+                                    <option key={estado.id} value={estado.value}>{estado.value}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                        <div className="flex flex-col">
+                            <div>
+                                <Form.Group>
+                                    <Form.Label>Nombre del Producto</Form.Label>
+                                    <Form.Control
+                                        {...register("producto", {
+                                            required: false,
+                                        })}
+                                        type="text"
+                                        placeholder="Nombre del Producto"
+                                        isInvalid={errors.producto}
+                                        value={nombreProductoInput}
+                                        onChange={handleInputProductoChange}
+                                    />
+                                </Form.Group>
+                            </div>
+
+                            <div className="fixed my-20 shadow z-40 bg-white w-80">
+                                {nombreProductoInput && productosFiltrados.length > 0 && (
+                                    <ul>
+                                        {productosFiltrados.map((producto) => (
+                                            <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickProductoRow(producto.id)} key={producto.id}>{producto.nombre}</li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                            </div>
+                        </div>
+
+
+                        <Form.Group>
+                            <Form.Label>Cantidad a Comprar</Form.Label>
+                            <Form.Control
+                                {...registerDetalle("cantidad")}
+                                type="number"
+                                placeholder="Cantidad del Producto"
+                                isInvalid={errorsDetalle.cantidad}
+                            />
+                        </Form.Group>
+
+
+                        {/* Botón para agregar el detalle de factura */}
+                        <div className="mt-2 mb-2 ml-1">
+                            <Button variant="success" onClick={handleSubmitDetalle(handleAgregarDetalle)}>
+                                Agregar Detalle
+                            </Button>
+                        </div>
+
+
+
+                        <DetallesTabla detalles={productosAgregar} />
+
+
+
+                    </Modal.Body>
+                    <Modal.Footer>
+
+                        <Button variant="secondary" onClick={() => { handleModal(), reset(), resetDetalle(), setProductosAgregar([]), setShowDetalleModal(false), setNombreProductoInput(""), setNombreProveedorInput("") }}>
+                            Cerrar
+                        </Button>
+                        <Button variant="primary" type="submit">
+                            {isEditar ? "Terminar Edición" : "Guardar"}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
+
 
 
         </Layout >

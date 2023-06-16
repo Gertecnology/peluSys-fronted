@@ -10,7 +10,6 @@ const Sidebar = ({ children }) => {
     const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
     const [isSubMenuFacturacionOpen, setIsSubMenuFacturacionOpen] = useState(false);
     const [isSubMenuVentasOpen, setIsSubMenuVentasOpen] = useState(false);
-    const {setUser} = useContext(AuthContext)
 
 
     const handleMenuClick = (route) => {
@@ -133,14 +132,7 @@ const Sidebar = ({ children }) => {
                                             Caja
                                         </button>
                                     </li>
-                                    <li>
-                                        <button
-                                            onClick={() => handleMenuClick("/Facturacion")}
-                                            className="text-gray-600 py-3 hover:text-gray-900"
-                                        >
-                                            Facturas
-                                        </button>
-                                    </li>
+
                                 </ul>
                             )}
                         </li>

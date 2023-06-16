@@ -1,6 +1,7 @@
 import Layout from "@/layout/Layout";
-import { Modal, Button, Form } from "react-bootstrap";
-import { useContext, useEffect, useState } from "react";
+import { Modal, Button, Form, Table } from "react-bootstrap";
+import { use, useContext, useEffect, useState } from "react";
+
 import { useForm } from "react-hook-form";
 import { useRouter } from 'next/router'
 import { AuthContext } from "@/pages/contexts/AuthContext";
@@ -14,6 +15,9 @@ import { FiEdit2 } from "react-icons/fi";
 import Mensaje from "@/components/Mensaje";
 import { toast } from "react-toastify";
 import axios from "axios";
+import FacturasApi from "./api/FacturasApi";
+import { formatearFecha } from "@/helpers";
+
 
 
 const Caja = () => {
@@ -34,6 +38,12 @@ const Caja = () => {
     const [clientesSearchValue, setClientesSearchValue] = useState("");
     const [totalPagar, setTotalPagar] = useState("");
     const [cantidad, setCantidad] = useState('');
+    const [filtroFacturas, setFiltroFacturas] = useState("");
+    const [montoTarjeta, setMontoTarjeta] = useState("");
+    const [montoTotal, setMontoTotal] = useState("");
+    const [montoEfectivo, setMontoEfectivo] = useState("");
+    const [vueltoMostrar, setVueltoMostrar] = useState("");
+
 
     const [clientes, setClientes] = useState([]);
     const [cajas, setCajas] = useState([]);
@@ -45,6 +55,21 @@ const Caja = () => {
     const [clientesFiltrados, setClientesFiltrados] = useState([]);
     const [datosCliente, setDatosCliente] = useState([]);
     const [guardarProductosFactura, setGuardarProductosFactura] = useState([]);
+    const [cajaEmpleado, setCajaEmpleado] = useState([]);
+    const [facturas, setFacturas] = useState([]);
+    const [facturaSeleccionada, setFacturaSeleccionada] = useState([]);
+    const [facturasId, setFacturasId] = useState([]);
+    const [listaFacturasPagar, setListaFacturasPagar] = useState([]);
+    const [listaMetodosPago, setListaMetodosPago] = useState([]);
+    const [totalPagarFacturas, setTotalPagarFacturas] = useState([]);
+    const [vuelto, setVuelto] = useState([]);
+    const [listaFacturasFiltradas, setListaFacturasFiltradas] = useState([]);
+    const [montoReal, setMontoFinal] = useState([]);
+    const [montoTeorico, setMontoReal] = useState([]);
+    const [transacciones, setTransacciones] = useState([]);
+
+
+
 
 
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
@@ -54,19 +79,37 @@ const Caja = () => {
     const [areComponentsEnabled, setAreComponentsEnabled] = useState(false);
     const [showAddClienteModal, setShowAddClienteModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
-    const [btnOneVisible, setBtnOneVisible] = useState(false);
-    const [btnSecondVisible, setBtnSecondVisible] = useState(true);
+    const [btnAbrirCajaVisible, setBtnAbrirCajaVisible] = useState(true);
+    const [btnCerrarCajaVisible, setBtnCerrarCajaVisible] = useState(false);
+    const [isAbierto, setIsAbierto] = useState(false);
+    const [showFacturasModal, setShowFacturasModal] = useState(false);
+    const [showMetodoPagoModal, setShowMetodoPagoModal] = useState(false);
+    const [isSubMenuEfectivoOpen, setIsSubMenuEfectivoOpen] = useState(false);
+    const [isSubMenuTarjetaOpen, setIsSubMenuTarjetaOpen] = useState(false);
+    const [isBuscar, setIsBuscar] = useState(false);
+    const [showCerrarCajaModal, setShowCerrarCajaModal] = useState(false);
+    const [isMostrarVuelto, setIsMostrarVuelto] = useState(false);
+
+
+
 
     const handleChangeComponents = () => {
         setAreComponentsEnabled(!areComponentsEnabled);
     };
 
+    const handleCerrarCajaModal = () => {
+        obtenerMonto(cajaEmpleado.cajas_id)
+        setShowCerrarCajaModal(!showCerrarCajaModal);
+    };
+
     useEffect(() => {
-        obtenerCajas();
         obtenerCajas();
         obtenerClientes();
         obtenerEmpleados();
         obtenerProductos();
+        obtenerFacturas();
+        comprobarCaja();
+
     }, [user]);
 
     useEffect(() => {
@@ -74,9 +117,30 @@ const Caja = () => {
         setTotalPagar(sumaTotal);
     }, [carrito])
 
+    useEffect(() => {
+        if (filtroFacturas.length > 4) {
+            setIsBuscar(true);
+            handleFiltrar(filtroFacturas)
+        } else {
+            setIsBuscar(false);
+        }
+
+    }, [filtroFacturas])
 
     useEffect(() => {
-        if (rucCliente.length > 6) {
+        if (montoEfectivo.length > 2) {
+            setIsMostrarVuelto(true);
+            const vuelto = montoEfectivo - totalPagarFacturas
+            setVueltoMostrar(vuelto)
+        } else {
+            setIsMostrarVuelto(false);
+        }
+    }, [montoEfectivo])
+
+
+    useEffect(() => {
+        if (rucCliente.length > 4) {
+
             filtrarCliente(rucCliente)
         }
         else {
@@ -89,6 +153,31 @@ const Caja = () => {
         setShowAddClienteModal(!showAddClienteModal);
 
     };
+
+    const handleFacturasModal = () => {
+        obtenerFacturas();
+        setShowFacturasModal(!showFacturasModal);
+    }
+
+    const handleMetodoPagoModal = () => {
+        if (facturaSeleccionada.length > 0) {
+            setShowMetodoPagoModal(!showMetodoPagoModal);
+            setShowFacturasModal(!showFacturasModal);
+            listadoFacturas();
+        }
+        else {
+            alert("Por favor,Elija facturas a pagar");
+        }
+    }
+
+    const handleSubMenuEfectivo = () => {
+        setIsSubMenuEfectivoOpen(!isSubMenuEfectivoOpen);
+    }
+    const handleSubMenuTarjeta = () => {
+        setIsSubMenuTarjetaOpen(!isSubMenuTarjetaOpen);
+    }
+
+
 
     const obtenerClientes = () => {
 
@@ -113,37 +202,39 @@ const Caja = () => {
             cajaApi
                 .getCajas()
                 .then((datos) => {
-                    setCajas(datos);
-                    const filtrarCajasDisponibles = cajas?.filter(
-                        (caja) => caja.estado === "CERRADO"
+                    const filtrarCajasDisponibles = datos?.filter(
+                        (caja) => caja?.estado === "CERRADO"
+
                     );
                     setCajasDisponibles(filtrarCajasDisponibles);
                     resolve(); // Resolver la promesa una vez que se completó la tarea
                 })
                 .catch((error) => {
                     console.error("Error al obtener las cajas:", error);
-                    reject(error); // Rechazar la promesa en caso de error
+                    reject(); // Rechazar la promesa en caso de error
+
                 });
         });
     };
 
-    /*const obtenerCajas = () => {
+    const obtenerFacturas = () => {
+        const facturaApi = new FacturasApi(user.token);
+        facturaApi.obtenerFacturas()
+            .then((datos) => {
+                const facturasVentaPendientes = datos.filter((factura) => {
+                    return factura.esCompra === "VENTA" && factura.pagado === "PENDIENTE";
+                });
 
-    const cajaApi = new CajaApi(user.token);
+                // Realizar algo con las facturas filtradas
+                setFacturas(facturasVentaPendientes);
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al obtener las facturas:", error);
+            });
+    };
 
-    cajaApi.getCajas()
-        .then((datos) => {
-            // Realizar algo con los datos obtenidos
-            setCajas(datos);
-            const filtrarCajasDisponibles = cajas?.filter(caja => caja.estado === "CERRADO")
-            setCajasDisponibles(filtrarCajasDisponibles)
-        })
-        .catch((error) => {
-            // Manejar el error
-            console.error("Error al obtener las cajas:", error);
-        });
 
-}*/
 
     const obtenerEmpleados = () => {
         const empleadoApi = new EmpleadoApi(user.token);
@@ -176,6 +267,24 @@ const Caja = () => {
             });
 
     }
+    const obtenerMonto = (id) => {
+
+        const cajaApi = new CajaApi(user.token);
+
+        cajaApi.getMontoCaja(id)
+            .then((datos) => {
+                // Realizar algo con los datos obtenidos
+                setMontoReal(datos);
+                console.log(datos)
+
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al obtener los montos:", error);
+            });
+
+    }
+
 
     const handleAbrirCajaModal = () => {
         setShowAbrirCajaModal(true);
@@ -183,7 +292,8 @@ const Caja = () => {
     }
 
     const formAbrirCaja = (data) => {
-        if (getValues("monto") <= 0) {
+        if (getValues("monto") < 0) {
+
             setMensaje("Monto no valido!!");
             return;
         }
@@ -205,6 +315,10 @@ const Caja = () => {
                 setVisible(!visible);
                 handleChangeComponents();
                 handleClose();
+                setCajaEmpleado(response.data)
+                setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
+                setBtnCerrarCajaVisible(!btnCerrarCajaVisible)
+
 
             })
             .catch((error) => {
@@ -212,28 +326,55 @@ const Caja = () => {
             })
             .finally(() => {
                 reset();
-                setBtnOneVisible(!btnOneVisible);
-                setBtnSecondVisible(!btnSecondVisible)
             })
     }
+
+    const verCajaEmpleado = () => {
+        return new Promise((resolve, reject) => {
+            const cajaApi = new CajaApi(user.token);
+            cajaApi
+                .getCajaEmpleado(user.empleado_id)
+                .then((datos) => {
+                    setCajaEmpleado(datos);
+                    setIsAbierto(true);
+                    setIsCheckboxDisabled(true);
+                    setVisible(true);
+                    setAreComponentsEnabled(true)
+                    handleClose();
+                    resolve(); // Resolver la promesa una vez que se completó la tarea
+                })
+                .catch((error) => {
+                    console.error("Error al obtener las cajas:", error);
+                    reject(); // Rechazar la promesa en caso de error
+                });
+        });
+    };
+
+
+    const comprobarCaja = () => {
+        verCajaEmpleado();
+        (cajaEmpleado.length > 0 && isAbierto) ? (
+            setBtnAbrirCajaVisible(false),
+            setBtnCerrarCajaVisible(true)
+        ) :
+            setBtnAbrirCajaVisible(true),
+            setBtnCerrarCajaVisible(false)
+    }
+
 
     const formClienteSubmit = (data) => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/guardar/`;
-        const token = user.accessToken
+        const token = user.token
+
         handleClienteModal();
         axios.post(
             api,
             {
-
-                nombre: data.nombre,
-                ruc: data.ruc,
-                direccion: data.direccion,
-                telefono: data.telefono,
+                ...data,
                 credito: 0,
                 credito_maximo: 0,
-                linkFotoPerfil: null,
-                email: data.email
+
             },
             { headers: { "Authorization": `Bearer ${token}` } }
         )
@@ -241,11 +382,33 @@ const Caja = () => {
                 toast.success('Cliente Agregado');
             })
             .catch((error) => {
-                console.log(error)
                 toast.error('No se pudo agregar!"');
-            });
+            })
+            .finally(() => {
+                resetCliente();
+                obtenerClientes();
+            })
 
     }
+
+
+    const handleFiltrar = (filtro) => {
+        setIsBuscar(true);
+        const facturaApi = new FacturasApi(user.token);
+        facturaApi.filterFacturasVentasListar(filtro)
+            .then((datos) => {
+                // Realizar algo con los datos obtenidos
+                setListaFacturasFiltradas(datos);
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al filtrar las facturas:", error);
+            })
+
+
+    }
+
+
 
 
 
@@ -280,6 +443,8 @@ const Caja = () => {
     const handleClickClienteRow = (id) => {
         const cliente = clientes.find(c => c.id === id);
         setClientesSearchValue(cliente?.nombre);
+        setRucCliente(cliente?.ruc);
+
         setDatosCliente(cliente);
         setClientesFiltrados([]);
     }
@@ -327,54 +492,61 @@ const Caja = () => {
         const crearFactura = {
             cantidad: Number(detalle.cantidad),
             producto_id: Number(detalle.id),
-            servicio_id: 0
-        }
+            servicio_id: 0,
+        };
+
         if (detalle.cantidad > 0) {
-            const productoExistente = carrito.find(
-                (item) => item.id === detalle.id
-            );
+            const productoExistenteIndex = carrito.findIndex((item) => item.id === detalle.id);
 
-            if (productoExistente) {
-                (isEditar ? (
-                    // si se edita se pone la nueva cantidad
-                    productoExistente.cantidad = Number(detalle.cantidad)
-                ) : (
-                    // Si el producto ya existe, incrementar la cantidad
-                    productoExistente.cantidad += Number(detalle.cantidad)
-                ))
+            if (productoExistenteIndex !== -1 && isEditar) {
+                // Si el producto existe y se está editando, actualizar la cantidad
+                const carritoActualizado = [...carrito];
+                carritoActualizado[productoExistenteIndex] = {
+                    ...carrito[productoExistenteIndex],
+                    cantidad: Number(detalle.cantidad),
+                };
 
-                setCarrito([...carrito]);
-                handleGuardarProductoFactura(...crearFactura)
-            }
-            else {
+                setCarrito(carritoActualizado);
+            } else if (productoExistenteIndex !== -1 && !isEditar) {
+                // Si el producto existe pero no se está editando, incrementar la cantidad
+                const carritoActualizado = [...carrito];
+                carritoActualizado[productoExistenteIndex] = {
+                    ...carrito[productoExistenteIndex],
+                    cantidad: carrito[productoExistenteIndex].cantidad + Number(detalle.cantidad),
+                };
+
+                setCarrito(carritoActualizado);
+            } else {
                 // Si el producto no existe, agregarlo al arreglo
                 setCarrito([...carrito, detalle]);
-                handleGuardarProductoFactura(...guardarProductosFactura, crearFactura)
             }
+
+            handleGuardarProductoFactura([...guardarProductosFactura, crearFactura]);
         }
+
         setProductosSearchValue("");
         setCantidad("");
-    }
+    };
+
+
+    const handleEditProductoCarrito = (id) => {
+        const productoActualizado = carrito.find((c) => c.id === id);
+        setIsEditar(true);
+        setProductosSearchValue(productoActualizado?.nombre);
+        setCantidad(productoActualizado.cantidad);
+    };
 
     const handleDeleteProductoCarrito = (id) => {
         const carritoActualizado = carrito.filter(c => c.id !== id);
         setCarrito(carritoActualizado);
     }
 
-    const handleEditProductoCarrito = (id) => {
-        const productoActualizado = carrito.find(c => c.id === id);
-        setIsEditar(true);
-        setProductosSearchValue(productoActualizado?.nombre);
-        setCantidad(productoActualizado.cantidad);
-
-    }
-
     const guardarFacturacion = () => {
-        console.log(carrito.length)
         if (carrito.length > 0 && datosCliente.nombre !== "") {
             if (!user) return
             const api = `${process.env.API_URL}api/factura/guardarVentar/`;
-            const token = user.accessToken;
+            const token = user.token;
+
             axios.post(
                 api,
                 {
@@ -389,7 +561,7 @@ const Caja = () => {
                     toast.success('Factura Agregado');
                 })
                 .catch((error) => {
-                    console.log(error)
+
                     toast.error('No se pudo agregar!"');
                 })
                 .finally(() => {
@@ -398,15 +570,397 @@ const Caja = () => {
                     setProductosSearchValue("");
                     setCarrito([]);
                     setCantidad("");
-                    setTimeout(() => {
-                        ruta.push("/Facturacion");
-                    }, 500);
                 });
         } else {
             alert("Por favor complete los campos!!")
         }
 
     }
+
+    const actualizarFactura = (id, facturaActualizada) => {
+        //Pasamos el id de la factura
+        if (id !== undefined || id !== null) {
+            if (!user) return
+            const api = `${process.env.API_URL}api/factura/actualizar/${id}`
+            const token = user.token;
+            const json = {
+                id: id,
+                ...facturaActualizada
+            }
+            console.log(json);
+            axios.post(
+                api,
+                json,
+                { headers: { "Authorization": `Bearer ${token}` } }
+            )
+                .then((response) => {
+                    toast.success('Factura Agregado');
+                })
+                .catch((error) => {
+                    toast.error('No se pudo agregar!"');
+                })
+                .finally(() => {
+                    setClientesSearchValue("");
+                    setRucCliente("");
+                    setProductosSearchValue("");
+                    setCarrito([]);
+                    setCantidad("");
+                });
+        } else {
+            alert("Por favor complete los campos!!")
+        }
+
+
+    }
+
+    const handleCerrarCaja = () => {
+
+
+        const diferencia = montoReal - montoTeorico;
+        const json = {
+
+            cajaId: cajaEmpleado.cajas_id,
+            montoTeorico: montoTeorico.montoTeorico,
+            montoReal: montoReal,
+            diferencia: diferencia,
+            empleadoAutorizanteId: user.empleado_id
+        }
+        const api = `${process.env.API_URL}api/cajas/arqueo`;
+        const token = user.token;
+        axios.post(
+            api,
+            json,
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                console.log("listo")
+                handleCerrarCajaModal()
+                setBtnCerrarCajaVisible(true);
+                setBtnAbrirCajaVisible(false);
+                setAreComponentsEnabled(false);
+                setVisible(false)
+                setCajaEmpleado([])
+
+            })
+            .catch((error) => {
+                console.log(error)
+            })
+    }
+
+
+
+
+
+
+
+
+    const comprobarFacturasCliente = (id) => {
+        if (carrito.length > 0 && clientesSearchValue.length > 0) {
+            const facturasCliente = facturas.find(factura => factura.cliente_id === id);
+            if (facturasCliente !== undefined) {
+                // Obtener los datos anteriores de la factura
+                const facturaAnterior = facturasCliente;
+                const detallesAnteriores = facturaAnterior.detalles;
+                console.log(facturaAnterior)
+
+                // Crear un nuevo arreglo de detalles con la estructura deseada
+                const detalleAnterior = detallesAnteriores.map((detalle) => ({
+                    cantidad: Number(detalle.cantidad),
+                    producto_id: Number(detalle.producto_id),
+                    servicio_id: 0,
+                }));
+
+                console.log(detalleAnterior);
+
+
+                // Agregar los nuevos detalles al arreglo
+                const detallesNuevos = guardarProductosFactura.map((detalle) => ({
+                    cantidad: Number(detalle.cantidad),
+                    producto_id: Number(detalle.producto_id),
+                    servicio_id: 0,
+                }));
+
+                // Combinar los detalles anteriores y nuevos
+                const detallesCombinados = [...detalleAnterior, ...detallesNuevos];
+
+
+                // Crear el nuevo objeto de factura con los datos anteriores y los nuevos detalles
+                const facturaActualizada = {
+                    proveedorId: 0,
+                    clienteId: facturaAnterior.cliente_id,
+                    pagado: facturaAnterior.pagado,
+                    detalles: detallesCombinados,
+                };
+
+                console.log(facturaActualizada)
+
+                actualizarFactura(facturaAnterior.id, facturaActualizada)
+            }
+            else {
+                //Crear nueva factura
+                guardarFacturacion()
+
+            }
+        } else {
+            alert("completar los campos");
+        }
+
+    }
+
+    const formatearCliente = (id) => {
+        const cliente = clientes?.find(cliente => cliente.id === id);
+        return cliente?.nombre;
+    }
+
+    const handleCheckboxChange = (id) => {
+        setFacturaSeleccionada((prevState) => {
+            if (prevState.includes(id)) {
+                return prevState.filter((selectedId) => selectedId !== id);
+            } else {
+                return [...prevState, id];
+            }
+        });
+
+    };
+
+
+    const DetallesTabla = ({ facturas }) => {
+        // Ordenar las facturas por ID en orden descendente
+        const facturasOrdenadas = facturas.sort((a, b) => b.id - a.id);
+        return (
+            <div className="mt-2 scrollable-table-container">
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>Nro. Factura</th>
+                            <th>Cliente</th>
+                            <th>RUC</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th>Seleccionar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {isBuscar ?
+                            (
+                                listaFacturasFiltradas.map((factura, index) => (
+                                    <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
+                                        <td >{formatearCliente(factura.cliente_id)}</td>
+                                        <td >{factura.ruc}</td>
+                                        <td >{formatearFecha(factura.fecha)}</td>
+                                        <td>{factura.pagado}</td>
+                                        <td>{factura.precio_total}</td>
+
+                                        <td className="flex justify-center items-center">
+                                            <input
+                                                checked={facturaSeleccionada.includes(factura.id)}
+                                                onChange={() => { handleCheckboxChange(factura.id) }}
+                                                type="checkbox"
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                facturasOrdenadas.map((factura, index) => (
+                                    <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
+                                        <td >{formatearCliente(factura.cliente_id)}</td>
+                                        <td >{factura.ruc}</td>
+                                        <td >{formatearFecha(factura.fecha)}</td>
+                                        <td>{factura.pagado}</td>
+                                        <td>{factura.precio_total}</td>
+
+                                        <td className="flex justify-center items-center">
+                                            <input
+                                                checked={facturaSeleccionada.includes(factura.id)}
+                                                onChange={() => { handleCheckboxChange(factura.id) }}
+                                                type="checkbox"
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                            )
+
+
+                        }
+                    </tbody>
+                </Table>
+            </div>
+        );
+    };
+
+    const FacturasPagar = ({ facturas }) => {
+        // Ordenar las facturas por ID en orden descendente
+        const facturasOrdenadas = facturas?.sort((a, b) => b.id - a.id);
+        return (
+            <div className="mt-2 scrollable-table-container">
+                <Table striped bordered hover>
+                    <thead>
+                        <tr>
+                            <th>Nro. Factura</th>
+                            <th>Cliente</th>
+                            <th>RUC</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {facturasOrdenadas?.map((factura, index) => (
+                            <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
+                                <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
+                                <td >{formatearCliente(factura.cliente_id)}</td>
+                                <td >{factura.ruc}</td>
+                                <td >{formatearFecha(factura.fecha)}</td>
+                                <td>{factura.pagado}</td>
+                                <td>{factura.precio_total}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </div>
+        );
+    };
+
+    const listadoFacturas = () => {
+        const facturasSeleccionadas = facturas.filter((factura) =>
+            facturaSeleccionada.includes(factura.id)
+        );
+        const facturasIds = facturasSeleccionadas.map((factura) => factura.id);
+
+        setListaFacturasPagar(facturasSeleccionadas)
+        setFacturasId(facturasIds)
+        const sumaTotal = listaFacturasPagar.reduce((total, factura) => total + factura.precio_total, 0);
+        setTotalPagarFacturas(sumaTotal);
+    }
+
+    const realizarTransaccion = () => {
+
+
+        if (isSubMenuEfectivoOpen && isSubMenuTarjetaOpen) {
+            const montoRestante = totalPagarFacturas - montoEfectivo;
+            setMontoTarjeta(montoRestante);
+            const montoTotal = montoEfectivo + montoTarjeta;
+            setMontoTotal(montoTotal);
+
+            const transaccionEfectivo = {
+                monto: Number(montoEfectivo),
+                descripcion: "Pago en efectivo",
+                esCompra: "VENTA",
+                formaPago: "EFECTIVO",
+            };
+            const transaccionTarjeta = {
+                monto: Number(montoTarjeta),
+                descripcion: "Pago en tarjeta",
+                esCompra: "VENTA",
+                formaPago: "TARJETA",
+            };
+
+            setTransacciones([...transacciones, transaccionEfectivo]);
+            setTransacciones([...transacciones, transaccionTarjeta]);
+
+        } else if (isSubMenuEfectivoOpen) {
+            if (montoEfectivo >= totalPagarFacturas && montoEfectivo > 0) {
+                const vuelto = montoEfectivo - totalPagarFacturas;
+                setMontoTotal(montoEfectivo);
+                setVuelto(vuelto);
+
+                const transaccionEfectivo = {
+                    monto: Number(montoEfectivo),
+                    descripcion: "Pago en efectivo",
+                    esCompra: "VENTA",
+                    formaPago: "EFECTIVO",
+                };
+
+                setTransacciones([...transacciones, transaccionEfectivo]);
+
+
+            } else {
+                setIsMostrarVuelto(false);
+                alert("Monto insuficiente");
+                return;
+            }
+        } else if (isSubMenuTarjetaOpen) {
+            setMontoTarjeta(totalPagarFacturas);
+            setMontoTotal(totalPagarFacturas);
+
+            const transaccionTarjeta = {
+                monto: Number(montoTarjeta),
+                descripcion: "Pago en tarjeta",
+                esCompra: "VENTA",
+                formaPago: "TARJETA",
+            };
+
+
+            setTransacciones([...transacciones, transaccionTarjeta]);
+
+        }
+        formTransaccion()
+    };
+
+    const formTransaccion = () => {
+        if (!user) return
+        const api = `${process.env.API_URL}api/pagos`;
+        const token = user.token
+        const json = {
+            cajaId: cajaEmpleado.cajas_id,
+            precioTotalFactura: totalPagarFacturas,
+            pagoTotal: montoTotal,
+            facturasIds: facturasId,
+            movimientoDetalles: transacciones,
+        }
+        axios.post(
+            api,
+            json,
+            { headers: { "Authorization": `Bearer ${token}` } }
+        )
+            .then((response) => {
+                toast.success('Factura Pagada');
+                handleMetodoPagoModal()
+                setShowFacturasModal(false);
+                setMontoTarjeta("");
+                setMontoEfectivo("");
+                setIsSubMenuEfectivoOpen(false);
+                setIsSubMenuTarjetaOpen(false);
+                setTransacciones([])
+                imprimirFacturas(facturasId);
+            })
+            .catch((error) => {
+                toast.error('No se pudo Pagar!"');
+                console.log(error);
+                setMontoTarjeta("")
+                setMontoEfectivo("")
+
+            })
+            .finally(() => {
+
+            })
+
+
+    }
+
+
+    const imprimirFacturas = (facturasIds) => {
+        const facturaApi = new FacturasApi(user?.token);
+
+        facturasIds.forEach((id) => {
+            facturaApi
+                .imprimirFactura(id)
+                .then((datos) => {
+                    // Realizar algo con los datos obtenidos
+                })
+                .catch((error) => {
+                    // Manejar el error
+                    console.error(error);
+                });
+        });
+    };
+
+
+
+
 
     return (
         <Layout pagina={"Caja"} titulo={"CRUD Caja"} ruta={ruta.pathname}>
@@ -445,7 +999,9 @@ const Caja = () => {
                             {clientesSearchValue && clientesFiltrados.length > 0 && (
                                 <ul>
                                     {clientesFiltrados.map((cliente) => (
-                                        <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickClienteRow(cliente.id)} key={cliente.id}>{cliente.nombre}</li>
+                                        <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickClienteRow(cliente.id)} key={cliente.id}>
+                                            Cliente: {cliente.nombre} <span className="ml-10">RUC: {cliente.ruc}</span></li>
+
                                     ))}
                                 </ul>
                             )}
@@ -455,14 +1011,23 @@ const Caja = () => {
                     </div>
                     <div className="w-1/4 pr-20">
                         <div className="flex justify-center gap-3">
+
                             <button
                                 type="button"
                                 className={`transition-opacity duration-500 ease-in-out ${visible ? 'opacity-100 visible' : 'opacity-0 invisible'
                                     }  inline-block rounded bg-success px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#14a44d] transition duration-150 ease-in-out hover:bg-success-600 hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:bg-success-600 focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:outline-none focus:ring-0 active:bg-success-700 active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(20,164,77,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)]`}
 
-                                onClick={() => guardarFacturacion()}
+                                onClick={() => handleFacturasModal()}
                             >
+                                Ver Facturas
+                            </button>
+                            <button
+                                type="button"
+                                className={`transition-opacity duration-500 ease-in-out ${visible ? 'opacity-100 visible' : 'opacity-0 invisible'
+                                    }  inline-block rounded bg-success px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#14a44d] transition duration-150 ease-in-out hover:bg-success-600 hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:bg-success-600 focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] focus:outline-none focus:ring-0 active:bg-success-700 active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.3),0_4px_18px_0_rgba(20,164,77,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(20,164,77,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(20,164,77,0.2),0_4px_18px_0_rgba(20,164,77,0.1)]`}
 
+                                onClick={() => comprobarFacturasCliente(datosCliente.id)}
+                            >
 
                                 Facturar Compra
                             </button>
@@ -470,7 +1035,8 @@ const Caja = () => {
                                 type="button"
                                 class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
                                 onClick={() => handleAbrirCajaModal()}
-                                hidden={btnOneVisible}
+                                hidden={btnAbrirCajaVisible}
+
                             >
                                 Abrir Caja
                             </button>
@@ -478,8 +1044,9 @@ const Caja = () => {
                             <button
                                 type="button"
                                 class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
-                                onClick={() => handleCerrarCaja()}
-                                hidden={btnSecondVisible}
+                                onClick={() => handleCerrarCajaModal()}
+                                hidden={btnCerrarCajaVisible}
+
 
 
                             >
@@ -501,6 +1068,8 @@ const Caja = () => {
                         </div>
                         <div className="w-2/4">
                             <Form.Control
+                                type="number"
+
                                 placeholder="Cantidad"
                                 disabled={!areComponentsEnabled}
                                 value={cantidad}
@@ -624,7 +1193,8 @@ const Caja = () => {
             </Modal>
 
             {/*Registrar nuevo cliente */}
-            <Modal show={showAddClienteModal} onHide={handleClienteModal}>
+            <Modal show={showAddClienteModal} onHide={handleFacturasModal}>
+
                 <Form
                     onSubmit={handleSubmitCliente(formClienteSubmit)}
                 >
@@ -707,6 +1277,192 @@ const Caja = () => {
                     </Modal.Footer>
                 </Form>
             </Modal>
+
+            {/*Para listar las facturasss */}
+            <Modal show={showFacturasModal} onHide={handleFacturasModal}
+                backdrop="static"
+                keyboard={false}
+                size="xl"
+            >
+
+                <Modal.Header closeButton>
+                    <Modal.Title>Lista de Facturas</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+
+                    <div className="flex flex-col">
+                        <div className="flex justify-between">
+                            <div className="w-4/5">
+                                <div className="w-2/5">
+                                    <Form.Group>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Buscar Ej.: Nombre del Cliente o RUC"
+                                            value={filtroFacturas}
+                                            onChange={(e) => setFiltroFacturas(e.target.value)}
+
+                                        />
+                                    </Form.Group>
+                                </div>
+                            </div>
+                            <div>
+                                <Button variant="success" onClick={handleMetodoPagoModal}>
+                                    Pagar
+                                </Button>
+                            </div>
+                        </div>
+                        <div>
+                            <DetallesTabla facturas={facturas} />
+                        </div>
+                    </div>
+
+
+
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => { handleFacturasModal(), setFacturaSeleccionada([]), setFiltroFacturas("") }}>
+                        Cerrar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+
+            {/*Para listar los Metodos de pago */}
+            <Modal show={showMetodoPagoModal} onHide={handleMetodoPagoModal}
+                backdrop="static"
+                keyboard={false}
+                size="xl"
+            >
+
+                <Modal.Header closeButton>
+                    <Modal.Title>Elija el Metodo(s) de Pago(s)</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="flex flex-col">
+                        <div className="flex justify-between">
+                            <div>
+                                <Form.Label className="text-xl mb-3">Por favor, Seleecione opcion</Form.Label>
+                                <div className="flex">
+                                    <li className="flex w-full md:w-auto items-start gap-3">
+                                        <div className="flex flex-col">
+                                            <button
+                                                onClick={handleSubMenuEfectivo}
+                                                className={`flex justify-center group items-center space-x-4 group border-l-4  border-blue-700 border-l-blue-700 ${isSubMenuEfectivoOpen ? "bg-blue-700 text-white" : "hover:bg-blue-700 text-black "
+                                                    } rounded px-2 py-2 w-full md:w-52`}
+                                            >
+                                                <p className="text-lg mb-0 group-hover:text-white">Efectivo</p>
+                                            </button>
+                                            {isSubMenuEfectivoOpen && (
+                                                <ul className="mt-2">
+                                                    <li>
+                                                        <div className="mt-4">
+                                                            <Form.Group>
+                                                                <Form.Label className="text-xl">
+                                                                    Ingrese Cantidad
+                                                                </Form.Label>
+                                                                <Form.Control
+                                                                    type="number"
+                                                                    placeholder="Ingresar Monto"
+                                                                    value={montoEfectivo}
+                                                                    onChange={(e) => setMontoEfectivo(e.target.value)}
+                                                                />
+                                                            </Form.Group>
+                                                        </div>
+                                                        {isMostrarVuelto ? (<div className="mt-2">
+                                                            <Form.Label className="text-xl">
+                                                                Vuelto: {vueltoMostrar}
+                                                            </Form.Label>
+                                                        </div>) : null}
+                                                    </li>
+                                                </ul>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <button
+                                                onClick={handleSubMenuTarjeta}
+                                                className={`flex justify-center group items-center space-x-4 group border-l-4  border-blue-700 border-l-blue-700 ${isSubMenuTarjetaOpen ? "bg-blue-700 text-white" : "hover:bg-blue-700 text-black "
+                                                    } rounded px-2 py-2 w-full md:w-52`}
+                                            >
+                                                <p className="text-lg mb-0 group-hover:text-white">Tarjeta</p>
+                                            </button>
+                                        </div>
+
+                                    </li>
+                                </div>
+                            </div>
+                            <div className="mt-2">
+                                <Button variant="success" onClick={realizarTransaccion}>
+                                    Realizar Pago
+                                </Button>
+                            </div>
+
+                        </div>
+                        <div className="mt-5">
+                            <FacturasPagar facturas={listaFacturasPagar} />
+                        </div>
+                        <div className="mt-5 bottom-44 right-56 flex justify-end">
+                            <label className="text-black text-2xl font-mono">Total venta: {totalPagarFacturas} Gs.</label>
+                        </div>
+                    </div>
+
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => { handleMetodoPagoModal(), setIsSubMenuEfectivoOpen(false), setIsSubMenuTarjetaOpen(false), setMontoEfectivo("") }}>
+                        Cerrar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+
+            {/*Modal para abrir caja*/}
+            <Modal show={showCerrarCajaModal} onHide={handleCerrarCajaModal} centered>
+
+                <Modal.Header>
+                    <Modal.Title>
+                        Cerrar Caja
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="flex justify-between">
+                        <div className="flex-col">
+                            <p>
+                                <span className="font-bold">Cajero:</span> {user?.username} {" "} {formatearEmpleado(user?.empleado_id)}
+                            </p>
+                            <p>
+                            </p>
+                        </div>
+                        <div>
+                            <img
+                                alt={`Foto de perfil ${user?.username}`}
+                                src={urlPhoto}
+                                width="500"
+                                height="400"
+                                className="object-cover btn- h-9 w-9 rounded-full mr-2 bg-gray-300" />
+                        </div>
+                    </div>
+
+                    <Form.Label className="font-bold">Monto Teorico: {montoTeorico.montoTeorico} Gs.</Form.Label>
+                    <Form.Group>
+                        <Form.Label className="font-bold">Monto de Cierre de Caja</Form.Label>
+                        <Form.Control
+                            type="number"
+                            placeholder="Monto de Cierre"
+                            value={montoReal}
+                            onChange={(e) => setMontoFinal(e.target.value)}
+
+                        />
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" type="submit" onClick={() => { handleCerrarCajaModal(), setMontoFinal([]) }}>
+                        Salir
+                    </Button>
+                    <Button variant="success" type="submit" onClick={handleCerrarCaja}>
+                        Cerrar Caja
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
 
         </Layout>
     );
