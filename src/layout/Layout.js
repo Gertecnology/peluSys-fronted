@@ -46,7 +46,7 @@ const Layout = ({ children, pagina }) => {
           width="100"
           color="blue"
           ariaLabel="bars-loading"
-          wrapperStyle={{}}
+          wrapperStyle={{}}citas
           wrapperClass="text-center justify-center"
           visible={true}
         />

@@ -2,6 +2,7 @@ import Layout from "@/layout/Layout";
 import { Modal, Button, Form, Table } from "react-bootstrap";
 import { useContext, useEffect, useState } from "react";
 import { set, useForm, useWatch } from "react-hook-form";
+
 import { useRouter } from 'next/router'
 import FacturasApi from "./api/FacturasApi";
 import ProveedorApi from "./api/ProveedorApi";
@@ -20,6 +21,7 @@ const PAGE_SIZE = 10;
 const CompraProductos = ({ }) => {
     const { user } = useContext(AuthContext);
 
+
     const ruta = useRouter();
 
     const [facturas, setFacturas] = useState([]);
@@ -29,6 +31,7 @@ const CompraProductos = ({ }) => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalPagesFilter, setTotalPagesFilter] = useState(0);
 
+
     const [showModal, setShowModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
     const [isBuscar, setIsBuscar] = useState(false);
@@ -37,6 +40,7 @@ const CompraProductos = ({ }) => {
     const [showDetalleModal, setShowDetalleModal] = useState(false);
     const [isFiltro, setIsFiltro] = useState(false);
     const [isFiltroDetalle, setIsFiltroDetalle] = useState(false);
+
     const formDos = useForm();
     const [idEliminar, setIdEliminar] = useState(-1)
     const [facturaEditar, setFacturaEditar] = useState(undefined);
@@ -61,6 +65,7 @@ const CompraProductos = ({ }) => {
     const [nombreProveedorInput, setNombreProveedorInput] = useState("");
     const [nombreProductoInput, setNombreProductoInput] = useState("");
     const [valorDefecto, setValorDefecto] = useState("");
+
     const [iva, setIva] = useState(
         [
             { id: 1, value: 0.1 },
@@ -128,6 +133,7 @@ const CompraProductos = ({ }) => {
     }, [filtroInputDetalle]);
 
 
+
     const obtenerFacturas = () => {
         if (user && user.token) {
             const facturaApi = new FacturasApi(user.token);
@@ -140,6 +146,7 @@ const CompraProductos = ({ }) => {
                     const totalPagesFacturas = facturasFiltradas.map((factura) => factura.totalPages);
                     setTotalPages(totalPagesFacturas);
                     console.log(facturasFiltradas);
+
                 })
                 .catch((error) => {
                     // Manejar el error
@@ -147,6 +154,7 @@ const CompraProductos = ({ }) => {
                 })
         }
     }
+
 
     const obtenerProveedores = () => {
 
@@ -184,6 +192,7 @@ const CompraProductos = ({ }) => {
     const actualizar = () => {
         valorFiltrado === "" ? setIsFiltro(false) : null;
         isBuscar ? handleFiltrar(valorFiltro) : null;
+
     }
 
 
@@ -237,6 +246,7 @@ const CompraProductos = ({ }) => {
                                     </tr>
                                 ))
                             )}
+
                     </tbody>
                 </Table>
             </div>
@@ -253,6 +263,7 @@ const CompraProductos = ({ }) => {
             const detalleProducto = {
                 cantidad: Number(data.cantidad),
                 producto_id: productosDatos.id,
+
                 servicio_id: 0
             };
             const productoExistente = productosAgregar.find(
@@ -273,6 +284,7 @@ const CompraProductos = ({ }) => {
             cantidad: ""
         });
         setNombreProductoInput([]);
+
     }
 
     const formSubmit = (data) => {
@@ -282,10 +294,12 @@ const CompraProductos = ({ }) => {
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
         const json = {
             proveedorId: proveedorDatos.id,
+
             numeroFactura: data.factura,
             pagado: data.estado,
             detalles: productosAgregar
         }
+
         axios.post(
             api,
             json,
@@ -308,6 +322,7 @@ const CompraProductos = ({ }) => {
                 setProductosAgregar([]);
                 setNombreProveedorInput([]);
                 setNombreProductoInput([]);
+
             })
 
 
@@ -323,6 +338,7 @@ const CompraProductos = ({ }) => {
         setNombreProveedorInput(proveedor.nombre);
         setProveedorDatos(proveedor);
         setValue("factura", factura.numero_factura);
+
         setValue("estado", factura.pagado);
         setProductosAgregar(...productosAgregar, factura.detalles);
         handleModal();
@@ -346,6 +362,7 @@ const CompraProductos = ({ }) => {
         console.log(json)
         axios.post(api,
             json,
+
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
             .then(() => {
@@ -354,11 +371,13 @@ const CompraProductos = ({ }) => {
                 setShowDetalleModal(false);
 
 
+
             })
             .catch((error) => {
                 console.log(error)
                 toast.error('No se pudo actualizar la Factura!!!"');
                 setShowDetalleModal(false);
+
 
 
             })
@@ -370,6 +389,7 @@ const CompraProductos = ({ }) => {
                 setProductosAgregar([]);
                 setNombreProveedorInput([]);
                 setNombreProductoInput([]);
+
             })
 
     }
@@ -380,6 +400,7 @@ const CompraProductos = ({ }) => {
         const valor = event.target.value;
         setValorFiltro(valor);
         handleFiltrar(valor);
+
     };
 
     const handleFiltrar = (estado) => {
@@ -393,6 +414,7 @@ const CompraProductos = ({ }) => {
                 // Realizar algo con los datos obtenidos
                 setFacturasFiltradas(datos?.content);
                 setTotalPagesFilter(datos?.totalPages)
+
             })
             .catch((error) => {
                 // Manejar el error
@@ -421,6 +443,7 @@ const CompraProductos = ({ }) => {
 
 
     const formatearProveedor = (id) => {
+
         const proveedor = proveedores?.find(p => p.id === id);
         return proveedor?.nombre
     }
@@ -477,8 +500,10 @@ const CompraProductos = ({ }) => {
 
 
 
+
     return (
         <Layout pagina={"Compra de Productos"} titulo={"CRUD Compras Producto"} ruta={ruta.pathname}>
+
 
             <div className="block">
                 <div className="flex items-center">
@@ -487,6 +512,7 @@ const CompraProductos = ({ }) => {
                             <Form.Group>
                                 <Form.Select value={valorFiltro} onChange={handleSelectChange}>
                                     <option value={valorDefecto} disabled selected>Seleccione un Filtro</option>
+
                                     {opciones?.map((opcion) => (
                                         <option key={opcion.id} value={opcion.value}>{opcion.value}</option>
                                     ))}
@@ -498,6 +524,7 @@ const CompraProductos = ({ }) => {
                                 placeholder="Buscar Ej.: Nombre del Proveedor"
                                 value={valorFiltrado}
                                 onChange={handleFiltrarInput}
+
                             />
                         </div>
                     </div>
@@ -556,11 +583,13 @@ const CompraProductos = ({ }) => {
                                             <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                                 <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                                 <td>{formatearProveedor(factura.proveedor_id)}</td>
+
                                                 <td >{formatearFecha(factura.fecha)}</td>
                                                 <td >{(factura.pagado)}</td>
                                                 <td >{(factura.precio_total)}</td>
                                                 <td >{factura.iva_total5 === 0 ? "-" : formatearDecimales(factura.iva_total5, 4)}</td>
                                                 <td >{factura.iva_total10 === 0 ? "-" : formatearDecimales(factura.iva_total10, 4)}</td>
+
                                                 <td>
                                                     <div className="flex gap-2 ">
                                                         <Button size="sm" variant="link" onClick={() => handleSetEditar(factura.id)}>
@@ -575,6 +604,7 @@ const CompraProductos = ({ }) => {
                                         <tr key={index} className="hover:bg-gray-50" onClick={() => handleRowClick(factura.id)}>
                                             <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
                                             <td>{formatearProveedor(factura.proveedor_id)}</td>
+
                                             <td >{formatearFecha(factura.fecha)}</td>
                                             <td >{(factura.pagado)}</td>
                                             <td >{(factura.precio_total)}</td>
@@ -656,6 +686,7 @@ const CompraProductos = ({ }) => {
                 <Modal.Header closeButton>
                     <Modal.Title>
                         <h1 className="text-3xl font-bold">Factura Nro. {facturaSeleccionada.numero_factura} {formatearProveedor(facturaSeleccionada.proveedor_id)}</h1>
+
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -869,6 +900,7 @@ const CompraProductos = ({ }) => {
                     </Modal.Footer>
                 </Form>
             </Modal>
+
 
 
         </Layout >
