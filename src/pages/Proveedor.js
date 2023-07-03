@@ -89,6 +89,7 @@ const Proveedor = ({ }) => {
 
 
     const formSubmit = (data) => {
+        console.log(data)
         handleModal()
         const api = `${process.env.API_URL}api/proveedores/guardar`;
         axios.post(
@@ -250,7 +251,7 @@ const Proveedor = ({ }) => {
                             <Form.Label>E-mail</Form.Label>
                             <Form.Control
                                 {...register("email", {
-                                    required: false
+                                    required: true
                                 })}
                                 type="text"
                                 placeholder="E-mail del Proveedor"
@@ -274,7 +275,7 @@ const Proveedor = ({ }) => {
                             <Form.Label>Timbrado Actual</Form.Label>
                             <Form.Control
                                 {...register("timbrado", {
-                                    required: false
+                                    required: true
                                 })}
                                 type="text"
                                 placeholder="Timbrado del Proveedor"

@@ -10,9 +10,11 @@ import { AuthContext } from "@/pages/contexts/AuthContext";
 import axios from "axios";
 import { FiEdit2 } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
-import { IoMdAddCircleOutline } from "react-icons/io"
 import { toast } from "react-toastify";
+import { PDFViewer } from 'react-pdf';
 import { formatearDecimales, formatearFecha } from "@/helpers";
+import Informe from "@/components/Informe";
+import { saveAs } from 'file-saver';
 
 
 const PAGE_SIZE = 10;
@@ -40,6 +42,7 @@ const CompraProductos = ({ }) => {
     const formDos = useForm();
     const [idEliminar, setIdEliminar] = useState(-1)
     const [facturaEditar, setFacturaEditar] = useState(undefined);
+    const [showInformeModal, setShowInformeModal] = useState(false);
     const { register, handleSubmit, formState: { errors }, setValue, reset, getValues
     } = useForm();
     const { register: registerDetalle, handleSubmit: handleSubmitDetalle, formState: { errors: errorsDetalle }, setValue: setValueDetalle, reset: resetDetalle, getValues: getValuesDetalle
@@ -85,17 +88,17 @@ const CompraProductos = ({ }) => {
 
 
 
-
+    const datos = [
+        { nombre: 'John Doe', edad: 30, ocupacion: 'Desarrollador' },
+        { nombre: 'Jane Smith', edad: 25, ocupacion: 'Diseñadora' },
+        { nombre: 'Bob Johnson', edad: 35, ocupacion: 'Gerente' },
+    ];
 
 
     useEffect(() => {
         obtenerFacturas();
         obtenerProductos();
         obtenerProveedores();
-        console.log(isFiltro);
-        console.log(isBuscar)
-        console.log(facturas);
-        console.log(paginatedFactura)
     }, [user]);
 
     const handlePageChange = (page) => {
@@ -110,6 +113,10 @@ const CompraProductos = ({ }) => {
         currentPage * PAGE_SIZE,
         (currentPage + 1) * PAGE_SIZE
     );
+
+    const handleInformeModal = () => {
+        setShowInformeModal(!showInformeModal)
+    }
 
 
 
@@ -276,8 +283,6 @@ const CompraProductos = ({ }) => {
     }
 
     const formSubmit = (data) => {
-        console.log(productosAgregar)
-        console.log(data)
         handleModal();
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
         const json = {
@@ -504,18 +509,26 @@ const CompraProductos = ({ }) => {
 
 
                     <div className="w-1/4 pl-40">
-                        <div className="flex justify-center mt-3">
-                            <button
-                                size="lg"
-                                onClick={() => handleModal()}>
-                                <div className="flex gap-1">
-                                    <p className="text-center hover:text-blueEdition hover:font-bold">
-                                        Agregar
-                                    </p>
-                                    <IoMdAddCircleOutline color="#808080" size="30px" onMouseOver={({ target }) => target.style.color = "blue"}
-                                        onMouseOut={({ target }) => target.style.color = "#808080"} />
-                                </div>
-                            </button>
+                        <div className="flex justify-center gap-3 mr-28">
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    handleInformeModal()
+                                }}
+                                variant="secondary"
+                                className="px-3"
+
+                            >
+                                Imprimir Informe
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="success"
+                                onClick={() => handleModal()}
+                                className=" px-3"
+                            >
+                                Agregar
+                            </Button>
                         </div>
                     </div>
 
@@ -869,6 +882,33 @@ const CompraProductos = ({ }) => {
                     </Modal.Footer>
                 </Form>
             </Modal>
+
+
+            {/* Modal del Informe */}
+            <Modal show={showInformeModal} onHide={handleInformeModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Imprimir Informe</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body>
+                    <div>
+
+                        <Informe data={datos} />
+                    </div>
+
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <       Button variant="secondary" onClick={() => {
+                        handleInformeModal()
+                    }}>
+                        Cancelar
+                    </Button>
+
+                    <Button variant="danger" type="submit" onClick={() => handleDelete(idEliminar)} >Eliminar</Button>
+                </Modal.Footer>
+            </Modal>
+
 
 
         </Layout >

@@ -62,8 +62,9 @@ const Caja = () => {
     const [vuelto, setVuelto] = useState([]);
     const [listaFacturasFiltradas, setListaFacturasFiltradas] = useState([]);
     const [montoReal, setMontoFinal] = useState([]);
-    const [montoTeorico, setMontoReal] = useState([]);
+    const [montoTeorico, setMontoTeorico] = useState([]);
     const [transacciones, setTransacciones] = useState([]);
+    const [montoTeoricoLs, setMontoTeoricoLs] = useState([]);
 
 
 
@@ -75,8 +76,8 @@ const Caja = () => {
     const [areComponentsEnabled, setAreComponentsEnabled] = useState(false);
     const [showAddClienteModal, setShowAddClienteModal] = useState(false);
     const [isEditar, setIsEditar] = useState(false);
-    const [btnAbrirCajaVisible, setBtnAbrirCajaVisible] = useState(true);
-    const [btnCerrarCajaVisible, setBtnCerrarCajaVisible] = useState(false);
+    const [btnAbrirCajaVisible, setBtnAbrirCajaVisible] = useState(false);
+    const [btnCerrarCajaVisible, setBtnCerrarCajaVisible] = useState(true);
     const [isAbierto, setIsAbierto] = useState(false);
     const [showFacturasModal, setShowFacturasModal] = useState(false);
     const [showMetodoPagoModal, setShowMetodoPagoModal] = useState(false);
@@ -85,6 +86,8 @@ const Caja = () => {
     const [isBuscar, setIsBuscar] = useState(false);
     const [showCerrarCajaModal, setShowCerrarCajaModal] = useState(false);
     const [isMostrarVuelto, setIsMostrarVuelto] = useState(false);
+    const [isTotalPagarShow, setIsTotalPagarShow] = useState(false);
+
 
 
 
@@ -98,13 +101,19 @@ const Caja = () => {
     };
 
     useEffect(() => {
-        obtenerCajas();
         obtenerClientes();
         obtenerEmpleados();
         obtenerProductos();
         obtenerFacturas();
         comprobarCaja();
     }, [user]);
+
+
+    useEffect(() => {
+        if (showFacturasModal) {
+            listadoFacturas();
+        }
+    }, [showFacturasModal]);
 
     useEffect(() => {
         const sumaTotal = carrito.reduce((total, producto) => total + producto.subtotal, 0);
@@ -132,6 +141,8 @@ const Caja = () => {
     }, [montoEfectivo])
 
 
+
+
     useEffect(() => {
         if (rucCliente.length > 4) {
             filtrarCliente(rucCliente)
@@ -154,9 +165,10 @@ const Caja = () => {
 
     const handleMetodoPagoModal = () => {
         if (facturaSeleccionada.length > 0) {
+            listadoFacturas();
             setShowMetodoPagoModal(!showMetodoPagoModal);
             setShowFacturasModal(!showFacturasModal);
-            listadoFacturas();
+            setIsTotalPagarShow(!isTotalPagarShow);
         }
         else {
             alert("Por favor,Elija facturas a pagar");
@@ -166,6 +178,7 @@ const Caja = () => {
     const handleSubMenuEfectivo = () => {
         setIsSubMenuEfectivoOpen(!isSubMenuEfectivoOpen);
     }
+
     const handleSubMenuTarjeta = () => {
         setIsSubMenuTarjetaOpen(!isSubMenuTarjetaOpen);
     }
@@ -262,14 +275,21 @@ const Caja = () => {
         cajaApi.getMontoCaja(id)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                setMontoReal(datos);
-                console.log(datos)
+                setMontoTeorico(datos);
+                localStorage.setItem('montoTeorico', datos.montoTeorico);
 
             })
             .catch((error) => {
                 // Manejar el error
                 console.error("Error al obtener los montos:", error);
-            });
+            })
+            .finally(() => {
+                const valorLocalStorage = localStorage.getItem('montoTeorico');
+                if (valorLocalStorage) {
+                    setMontoTeoricoLs(valorLocalStorage);
+                }
+            })
+
 
     }
 
@@ -303,7 +323,8 @@ const Caja = () => {
                 handleClose();
                 setCajaEmpleado(response.data)
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
-                setBtnCerrarCajaVisible(!btnCerrarCajaVisible)
+                setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
+                verCajaEmpleado();
 
             })
             .catch((error) => {
@@ -320,6 +341,7 @@ const Caja = () => {
             cajaApi
                 .getCajaEmpleado(user.empleado_id)
                 .then((datos) => {
+                    localStorage.setItem('cajaEmpleado', JSON.stringify(datos));
                     setCajaEmpleado(datos);
                     setIsAbierto(true);
                     setIsCheckboxDisabled(true);
@@ -337,13 +359,23 @@ const Caja = () => {
 
 
     const comprobarCaja = () => {
-        verCajaEmpleado();
-        (cajaEmpleado.length > 0 && isAbierto) ? (
-            setBtnAbrirCajaVisible(false),
-            setBtnCerrarCajaVisible(true)
-        ) :
-            setBtnAbrirCajaVisible(true),
-            setBtnCerrarCajaVisible(false)
+        // Verificar si hay datos guardados en el LocalStorage
+        const storedCajaEmpleado = localStorage.getItem('cajaEmpleado');
+        if (storedCajaEmpleado) {
+            // Convertir los datos almacenados en formato JSON nuevamente a un objeto
+            const parsedCajaEmpleado = JSON.parse(storedCajaEmpleado);
+            setCajaEmpleado(parsedCajaEmpleado);
+            obtenerMonto(cajaEmpleado.cajas_id);
+            setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
+            setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
+            setIsAbierto(true);
+            setIsCheckboxDisabled(true);
+            setVisible(true);
+            setAreComponentsEnabled(true)
+
+        } else {
+            obtenerCajas();
+        }
     }
 
 
@@ -613,11 +645,12 @@ const Caja = () => {
             .then((response) => {
                 console.log("listo")
                 handleCerrarCajaModal()
-                setBtnCerrarCajaVisible(true);
-                setBtnAbrirCajaVisible(false);
+                setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
+                setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
                 setAreComponentsEnabled(false);
                 setVisible(false)
                 setCajaEmpleado([])
+                localStorage.removeItem('cajaEmpleado');
 
             })
             .catch((error) => {
@@ -691,14 +724,9 @@ const Caja = () => {
     }
 
     const handleCheckboxChange = (id) => {
-        setFacturaSeleccionada((prevState) => {
-            if (prevState.includes(id)) {
-                return prevState.filter((selectedId) => selectedId !== id);
-            } else {
-                return [...prevState, id];
-            }
-        });
-
+        setFacturaSeleccionada((prevState) =>
+            prevState.includes(id) ? prevState.filter((selectedId) => selectedId !== id) : [...prevState, id]
+        );
     };
 
 
@@ -808,15 +836,17 @@ const Caja = () => {
         );
         const facturasIds = facturasSeleccionadas.map((factura) => factura.id);
 
-        setListaFacturasPagar(facturasSeleccionadas)
-        setFacturasId(facturasIds)
-        const sumaTotal = listaFacturasPagar.reduce((total, factura) => total + factura.precio_total, 0);
+        setListaFacturasPagar(facturasSeleccionadas);
+        setFacturasId(facturasIds);
+        const sumaTotal = facturasSeleccionadas.reduce(
+            (total, factura) => total + factura.precio_total,
+            0
+        );
         setTotalPagarFacturas(sumaTotal);
-    }
+    };
+
 
     const realizarTransaccion = () => {
-
-
         if (isSubMenuEfectivoOpen && isSubMenuTarjetaOpen) {
             const montoRestante = totalPagarFacturas - montoEfectivo;
             setMontoTarjeta(montoRestante);
@@ -841,8 +871,8 @@ const Caja = () => {
 
         } else if (isSubMenuEfectivoOpen) {
             if (montoEfectivo >= totalPagarFacturas && montoEfectivo > 0) {
-                const vuelto = montoEfectivo - totalPagarFacturas;
-                setMontoTotal(montoEfectivo);
+                const vuelto = -(montoEfectivo - totalPagarFacturas);
+                setMontoTotal(totalPagarFacturas);
                 setVuelto(vuelto);
 
                 const transaccionEfectivo = {
@@ -879,6 +909,7 @@ const Caja = () => {
     };
 
     const formTransaccion = () => {
+        console.log(montoTotal)
         if (!user) return
         const api = `${process.env.API_URL}api/pagos`;
         const token = user.token
@@ -986,6 +1017,10 @@ const Caja = () => {
 
                     </div>
                     <div className="w-1/4 pr-20">
+                        <div>
+                            <p className="text-2xl font-bold">Monto Actual en Caja: {montoTeoricoLs} Gs.</p>
+                        </div>
+
                         <div className="flex justify-center gap-3">
 
                             <button
@@ -1004,7 +1039,7 @@ const Caja = () => {
 
                                 onClick={() => comprobarFacturasCliente(datosCliente.id)}
                             >
-                                Facturar Compra
+                                Facturar Venta
                             </button>
                             <button
                                 type="button"
@@ -1372,7 +1407,11 @@ const Caja = () => {
                             <FacturasPagar facturas={listaFacturasPagar} />
                         </div>
                         <div className="mt-5 bottom-44 right-56 flex justify-end">
-                            <label className="text-black text-2xl font-mono">Total venta: {totalPagarFacturas} Gs.</label>
+                            <label className="text-black text-2xl font-mono">{
+                                isTotalPagarShow && (
+                                    <p>Total venta: {totalPagarFacturas} Gs.</p>
+                                )
+                            }</label>
                         </div>
                     </div>
 
