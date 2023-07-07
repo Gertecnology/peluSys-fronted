@@ -1,5 +1,7 @@
 import { useContext, useEffect, useState } from "react"
 import { AuthContext } from "@/pages/contexts/AuthContext"
+import {BsPersonBoundingBox} from "react-icons/bs"
+import { FiLogOut } from "react-icons/fi";
 
 
 const Header = ({ }) => {
@@ -37,10 +39,15 @@ const Header = ({ }) => {
                             </div>
                             <div className="md:space-x-6 justify-end items-center ml-auto flex space-x-3">
                                 <div className="justify-center items-center flex relative">
-                                    <img
+                                  { urlPhoto?.length ? <img
                                         src={urlPhoto}
-                                        className="object-cover btn- h-9 w-9 rounded-full mr-2 bg-gray-300" alt="" />
-                                    <p className="font-semibold text-sm mb-0">{username}</p>
+                                        className="object-cover btn- h-9 w-9 rounded-full mr-2 bg-gray-300" alt="" /> :
+                                        <BsPersonBoundingBox className="object-cover h-9 w-9 mr-2 bg-gray-300"/>    }
+                                        <div className="block">                                    
+                                        <p className="font-semibold text-sm mb-0">{username}</p>
+                            
+                                        <FiLogOut size={25} className="hover:cursor-pointer self-end justify-end text-right " onClick={() => setUser(undefined)}/>
+                                        </div>
                                 </div>
                             </div>
                         </div>

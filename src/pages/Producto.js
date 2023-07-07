@@ -200,6 +200,7 @@ const Producto = ({ }) => {
                 reset();
                 setShowNuevaMarcaModal(false);
                 setShowNuevoProveedorModal(false);
+
             })
 
     }
@@ -251,6 +252,7 @@ const Producto = ({ }) => {
                 setShowNuevaMarcaModal(false);
                 setShowNuevoProveedorModal(false);
                 setValor("");
+
 
 
             })
@@ -401,6 +403,7 @@ const Producto = ({ }) => {
 
                                 >
                                     <option selected key={""} value={""}>Selecciona una opción</option>
+
                                     {marcas?.map((marca) => (
                                         <option key={marca.id} value={marca.id}>{marca.nombre}</option>
                                     ))}
@@ -446,6 +449,7 @@ const Producto = ({ }) => {
                                     required: true
                                 })}
                                 type="number"
+
                                 placeholder="Precio de Venta del producto"
                                 isInvalid={errors.precioVenta}
                             />
@@ -715,6 +719,7 @@ const Producto = ({ }) => {
                         <Modal.Title>Agregar Nuevo Proveedor</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+
 
                         <Form.Group>
                             <Form.Label>Nombre del Proveedor</Form.Label>

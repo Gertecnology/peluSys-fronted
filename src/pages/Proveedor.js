@@ -145,6 +145,7 @@ const Proveedor = ({ }) => {
                 setValor("");
 
 
+
             })
 
     }
@@ -199,6 +200,7 @@ const Proveedor = ({ }) => {
 
                         <Form.Group>
                             <Form.Label>Nombre</Form.Label>
+
                             <Form.Control
                                 {...register("nombre", {
                                     required: true
@@ -251,7 +253,10 @@ const Proveedor = ({ }) => {
                             <Form.Label>E-mail</Form.Label>
                             <Form.Control
                                 {...register("email", {
+
                                     required: true
+
+
                                 })}
                                 type="text"
                                 placeholder="E-mail del Proveedor"

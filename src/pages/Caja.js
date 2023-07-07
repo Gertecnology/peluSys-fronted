@@ -1,6 +1,7 @@
 import Layout from "@/layout/Layout";
 import { Modal, Button, Form, Table } from "react-bootstrap";
 import { use, useContext, useEffect, useState } from "react";
+
 import { useForm } from "react-hook-form";
 import { useRouter } from 'next/router'
 import { AuthContext } from "@/pages/contexts/AuthContext";
@@ -18,6 +19,7 @@ import FacturasApi from "./api/FacturasApi";
 import { formatearFecha } from "@/helpers";
 import InformeCaja from "@/components/InformeCaja";
 import InformeApi from "./api/InformeApi";
+
 
 
 const Caja = () => {
@@ -44,6 +46,7 @@ const Caja = () => {
     const [montoEfectivo, setMontoEfectivo] = useState("");
     const [vueltoMostrar, setVueltoMostrar] = useState("");
     const [empleadoNombre, setEmpleadoNombre] = useState("");
+
 
     const [clientes, setClientes] = useState([]);
     const [cajas, setCajas] = useState([]);
@@ -75,6 +78,7 @@ const Caja = () => {
 
 
 
+
     const [showAbrirCajaModal, setShowAbrirCajaModal] = useState(false);
     const [isCheckboxDisabled, setIsCheckboxDisabled] = useState(true);
     const handleClose = () => setShowAbrirCajaModal(false);
@@ -94,6 +98,7 @@ const Caja = () => {
     const [isMostrarVuelto, setIsMostrarVuelto] = useState(false);
     const [isTotalPagarShow, setIsTotalPagarShow] = useState(false);
     const [showInformeModal, setShowInformeModal] = useState(false);
+
 
 
 
@@ -123,6 +128,7 @@ const Caja = () => {
         obtenerProductos();
         obtenerFacturas();
         comprobarCaja();
+
     }, [user]);
 
 
@@ -162,6 +168,7 @@ const Caja = () => {
 
     useEffect(() => {
         if (rucCliente.length > 4) {
+
             filtrarCliente(rucCliente)
         }
         else {
@@ -207,6 +214,7 @@ const Caja = () => {
     }
 
 
+
     const obtenerClientes = () => {
 
         const clienteApi = new ClienteApi(user.token);
@@ -223,6 +231,7 @@ const Caja = () => {
 
     }
 
+
     const obtenerCajas = async () => {
         return new Promise((resolve, reject) => {
             const cajaApi = new CajaApi(user.token);
@@ -231,6 +240,7 @@ const Caja = () => {
                 .then((datos) => {
                     const filtrarCajasDisponibles = datos?.filter(
                         (caja) => caja?.estado === "CERRADO"
+
                     );
                     setCajasDisponibles(filtrarCajasDisponibles);
                     resolve(); // Resolver la promesa una vez que se completó la tarea
@@ -238,6 +248,7 @@ const Caja = () => {
                 .catch((error) => {
                     console.error("Error al obtener las cajas:", error);
                     reject(); // Rechazar la promesa en caso de error
+
                 });
         });
     };
@@ -258,6 +269,7 @@ const Caja = () => {
                 console.error("Error al obtener las facturas:", error);
             });
     };
+
 
 
     const obtenerEmpleados = () => {
@@ -332,6 +344,7 @@ const Caja = () => {
 
     }
 
+
     const handleAbrirCajaModal = () => {
         setShowAbrirCajaModal(true);
 
@@ -339,6 +352,7 @@ const Caja = () => {
 
     const formAbrirCaja = (data) => {
         if (getValues("monto") < 0) {
+
             setMensaje("Monto no valido!!");
             return;
         }
@@ -364,6 +378,7 @@ const Caja = () => {
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
                 setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
                 verCajaEmpleado();
+
 
 
             })
@@ -427,6 +442,7 @@ const Caja = () => {
         if (!user) return
         const api = `${process.env.API_URL}api/clientes/guardar/`;
         const token = user.token
+
         handleClienteModal();
         axios.post(
             api,
@@ -434,6 +450,7 @@ const Caja = () => {
                 ...data,
                 credito: 0,
                 credito_maximo: 0,
+
             },
             { headers: { "Authorization": `Bearer ${token}` } }
         )
@@ -464,7 +481,9 @@ const Caja = () => {
                 console.error("Error al filtrar las facturas:", error);
             })
 
+
     }
+
 
 
 
@@ -501,6 +520,7 @@ const Caja = () => {
         const cliente = clientes.find(c => c.id === id);
         setClientesSearchValue(cliente?.nombre);
         setRucCliente(cliente?.ruc);
+
         setDatosCliente(cliente);
         setClientesFiltrados([]);
     }
@@ -602,6 +622,7 @@ const Caja = () => {
             if (!user) return
             const api = `${process.env.API_URL}api/factura/guardarVentar/`;
             const token = user.token;
+
             axios.post(
                 api,
                 {
@@ -616,6 +637,7 @@ const Caja = () => {
                     toast.success('Factura Agregado');
                 })
                 .catch((error) => {
+
                     toast.error('No se pudo agregar!"');
                 })
                 .finally(() => {
@@ -1014,6 +1036,7 @@ const Caja = () => {
 
 
 
+
     return (
         <Layout pagina={"Caja"} titulo={"CRUD Caja"} ruta={ruta.pathname}>
             <div className="block">
@@ -1053,6 +1076,7 @@ const Caja = () => {
                                     {clientesFiltrados.map((cliente) => (
                                         <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickClienteRow(cliente.id)} key={cliente.id}>
                                             Cliente: {cliente.nombre} <span className="ml-10">RUC: {cliente.ruc}</span></li>
+
                                     ))}
                                 </ul>
                             )}
@@ -1084,12 +1108,14 @@ const Caja = () => {
                                 onClick={() => comprobarFacturasCliente(datosCliente.id)}
                             >
                                 Facturar Venta
+
                             </button>
                             <button
                                 type="button"
                                 class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
                                 onClick={() => handleAbrirCajaModal()}
                                 hidden={btnAbrirCajaVisible}
+
                             >
                                 Abrir Caja
                             </button>
@@ -1099,6 +1125,7 @@ const Caja = () => {
                                 class="inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
                                 onClick={() => handleCerrarCajaModal()}
                                 hidden={btnCerrarCajaVisible}
+
 
 
                             >
@@ -1121,6 +1148,7 @@ const Caja = () => {
                         <div className="w-2/4">
                             <Form.Control
                                 type="number"
+
                                 placeholder="Cantidad"
                                 disabled={!areComponentsEnabled}
                                 value={cantidad}
@@ -1245,6 +1273,7 @@ const Caja = () => {
 
             {/*Registrar nuevo cliente */}
             <Modal show={showAddClienteModal} onHide={handleFacturasModal}>
+
                 <Form
                     onSubmit={handleSubmitCliente(formClienteSubmit)}
                 >
@@ -1530,6 +1559,7 @@ const Caja = () => {
                     <InformeCaja data={informeCaja} fecha={fecha} />
                 </Modal.Body>
             </Modal>
+
 
 
         </Layout>
