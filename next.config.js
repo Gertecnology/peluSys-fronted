@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    // API_URL: 'http://localhost:8080/',
-   API_URL: "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/"
+    API_URL: 'http://localhost:8081/',
+   //API_URL: "http://erpsistem-env.eba-n5ubcteu.us-east-1.elasticbeanstalk.com/"
   },
 }
 
