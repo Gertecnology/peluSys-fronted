@@ -16,6 +16,8 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import FacturasApi from "./api/FacturasApi";
 import { formatearFecha } from "@/helpers";
+import InformeCaja from "@/components/InformeCaja";
+import InformeApi from "./api/InformeApi";
 
 
 const Caja = () => {
@@ -41,6 +43,7 @@ const Caja = () => {
     const [montoTotal, setMontoTotal] = useState("");
     const [montoEfectivo, setMontoEfectivo] = useState("");
     const [vueltoMostrar, setVueltoMostrar] = useState("");
+    const [empleadoNombre, setEmpleadoNombre] = useState("");
 
     const [clientes, setClientes] = useState([]);
     const [cajas, setCajas] = useState([]);
@@ -65,6 +68,9 @@ const Caja = () => {
     const [montoTeorico, setMontoTeorico] = useState([]);
     const [transacciones, setTransacciones] = useState([]);
     const [montoTeoricoLs, setMontoTeoricoLs] = useState([]);
+    const [informeCaja, setInformeCaja] = useState([]);
+    const [fecha, setFecha] = useState([]);
+
 
 
 
@@ -87,6 +93,8 @@ const Caja = () => {
     const [showCerrarCajaModal, setShowCerrarCajaModal] = useState(false);
     const [isMostrarVuelto, setIsMostrarVuelto] = useState(false);
     const [isTotalPagarShow, setIsTotalPagarShow] = useState(false);
+    const [showInformeModal, setShowInformeModal] = useState(false);
+
 
 
 
@@ -96,7 +104,16 @@ const Caja = () => {
     };
 
     const handleCerrarCajaModal = () => {
-        obtenerMonto(cajaEmpleado.cajas_id)
+        const currentDate = new Date(); // Obtiene la fecha y hora actual
+
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const year = currentDate.getFullYear();
+        const formattedDate = `${day}-${month}-${year}`;
+
+        setFecha(formattedDate);
+        console.log(cajaEmpleado.cajas_id);
+        obtenerMonto(cajaEmpleado.cajas_id);
         setShowCerrarCajaModal(!showCerrarCajaModal);
     };
 
@@ -183,6 +200,12 @@ const Caja = () => {
         setIsSubMenuTarjetaOpen(!isSubMenuTarjetaOpen);
     }
 
+    const handleShowInformeModal = () => {
+        obtenerInformeCaja(cajaEmpleado.cajas_id);
+        setShowInformeModal(!showInformeModal);
+        setMontoTeoricoLs([])
+    }
+
 
     const obtenerClientes = () => {
 
@@ -252,6 +275,22 @@ const Caja = () => {
 
     }
 
+    const obtenerInformeCaja = (id) => {
+        const informeApi = new InformeApi(user.token);
+        informeApi.getInformeCaja(id)
+            .then((datos) => {
+                // Realizar algo con los datos obtenidos
+                setInformeCaja(datos);
+
+            })
+            .catch((error) => {
+                // Manejar el error
+                console.error("Error al obtener los informes de caja:", error);
+            });
+
+    }
+
+
     const obtenerProductos = () => {
 
         const productoApi = new ProductoApi(user.token);
@@ -316,15 +355,16 @@ const Caja = () => {
             },
             { headers: { "Authorization": `Bearer ${user.token}` } }
         )
-            .then((response) => {
+            .then((data) => {
                 setIsCheckboxDisabled(!isCheckboxDisabled);
                 setVisible(!visible);
                 handleChangeComponents();
                 handleClose();
-                setCajaEmpleado(response.data)
+                setCajaEmpleado(data)
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
                 setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
                 verCajaEmpleado();
+
 
             })
             .catch((error) => {
@@ -332,6 +372,7 @@ const Caja = () => {
             })
             .finally(() => {
                 reset();
+                setMontoTeoricoLs(data.monto);
             })
     }
 
@@ -353,7 +394,10 @@ const Caja = () => {
                 .catch((error) => {
                     console.error("Error al obtener las cajas:", error);
                     reject(); // Rechazar la promesa en caso de error
-                });
+                })
+                .finally(() => {
+                    obtenerMonto(cajaEmpleado.cajas_id);
+                })
         });
     };
 
@@ -597,7 +641,6 @@ const Caja = () => {
                 id: id,
                 ...facturaActualizada
             }
-            console.log(json);
             axios.post(
                 api,
                 json,
@@ -624,8 +667,6 @@ const Caja = () => {
     }
 
     const handleCerrarCaja = () => {
-
-
         const diferencia = montoReal - montoTeorico;
         const json = {
 
@@ -643,7 +684,6 @@ const Caja = () => {
             { headers: { "Authorization": `Bearer ${token}` } }
         )
             .then((response) => {
-                console.log("listo")
                 handleCerrarCajaModal()
                 setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
@@ -651,10 +691,15 @@ const Caja = () => {
                 setVisible(false)
                 setCajaEmpleado([])
                 localStorage.removeItem('cajaEmpleado');
+                handleShowInformeModal();
+                setMontoTeoricoLs([])
 
             })
             .catch((error) => {
                 console.log(error)
+            })
+            .finally(() => {
+                setMontoTeorico([]);
             })
     }
 
@@ -672,7 +717,6 @@ const Caja = () => {
                 // Obtener los datos anteriores de la factura
                 const facturaAnterior = facturasCliente;
                 const detallesAnteriores = facturaAnterior.detalles;
-                console.log(facturaAnterior)
 
                 // Crear un nuevo arreglo de detalles con la estructura deseada
                 const detalleAnterior = detallesAnteriores.map((detalle) => ({
@@ -681,7 +725,6 @@ const Caja = () => {
                     servicio_id: 0,
                 }));
 
-                console.log(detalleAnterior);
 
 
                 // Agregar los nuevos detalles al arreglo
@@ -703,7 +746,6 @@ const Caja = () => {
                     detalles: detallesCombinados,
                 };
 
-                console.log(facturaActualizada)
 
                 actualizarFactura(facturaAnterior.id, facturaActualizada)
             }
@@ -909,7 +951,6 @@ const Caja = () => {
     };
 
     const formTransaccion = () => {
-        console.log(montoTotal)
         if (!user) return
         const api = `${process.env.API_URL}api/pagos`;
         const token = user.token
@@ -935,6 +976,9 @@ const Caja = () => {
                 setIsSubMenuTarjetaOpen(false);
                 setTransacciones([])
                 imprimirFacturas(facturasId);
+
+                // Actualizar el valor de montoTeoricoLs sumando montoTotal
+                setMontoTeoricoLs((prevMonto) => prevMonto + montoTotal);
             })
             .catch((error) => {
                 toast.error('No se pudo Pagar!"');
@@ -944,7 +988,7 @@ const Caja = () => {
 
             })
             .finally(() => {
-
+                obtenerMonto(cajaEmpleado.cajas_id)
             })
 
 
@@ -1424,7 +1468,7 @@ const Caja = () => {
             </Modal>
 
 
-            {/*Modal para abrir caja*/}
+            {/*Modal para cerrar caja*/}
             <Modal show={showCerrarCajaModal} onHide={handleCerrarCajaModal} centered>
 
                 <Modal.Header>
@@ -1438,8 +1482,7 @@ const Caja = () => {
                             <p>
                                 <span className="font-bold">Cajero:</span> {user?.username} {" "} {formatearEmpleado(user?.empleado_id)}
                             </p>
-                            <p>
-                            </p>
+
                         </div>
                         <div>
                             <img
@@ -1472,6 +1515,22 @@ const Caja = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+
+
+            {/*Modal para imprimir informe*/}
+            <Modal show={showInformeModal} onHide={handleShowInformeModal} centered>
+
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        Imprimir Informe
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <InformeCaja data={informeCaja} fecha={fecha} />
+                </Modal.Body>
+            </Modal>
+
 
         </Layout>
     );

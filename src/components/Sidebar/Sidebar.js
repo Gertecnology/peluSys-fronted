@@ -104,7 +104,15 @@ const Sidebar = ({ children }) => {
                                             onClick={() => handleMenuClick("/CompraProductos")}
                                             className="text-gray-600 py-3 hover:text-gray-900"
                                         >
-                                            Comprar P.
+                                            Compras
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/VentaProducto")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Ventas
                                         </button>
                                     </li>
                                 </ul>
