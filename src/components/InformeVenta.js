@@ -1,73 +1,153 @@
-import { useState, useEffect } from 'react';
-import jsPDF from 'jspdf';
-import { Button } from 'react-bootstrap';
+import { formatearDinero } from "@/helpers";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
-const InformeVenta = ({ data, nombre, fecha, proveedores, marcas }) => {
+const styles = StyleSheet.create({
+    page: {
+        fontSize: 12,
+        padding: 20,
+    },
+    section: {
+        marginBottom: 10,
+    },
+    title: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    subtitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 3,
+    },
+    table: {
+        width: '100%',
+        marginTop: 10,
+    },
+    tableHeaderRow: {
+        flexDirection: 'row',
+    },
+    tableHeader: {
+        backgroundColor: '#000',
+        color: '#fff',
+        padding: 8,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        borderWidth: 1,
+        borderColor: '#000',
+    },
+    headerName: {
+        flex: 3,
+    },
+    headerQuantity: {
+        flex: 1,
+    },
+    headerBrand: {
+        flex: 1,
+    },
+    headerProvider: {
+        flex: 1,
+    },
+    headerUnitPrice: {
+        flex: 2,
+    },
+    headerTotalPrice: {
+        flex: 2,
+    },
+    tableRow: {
+        flexDirection: 'row',
+    },
+    tableData: {
+        flex: 1,
+        padding: 8,
+        textAlign: 'center',
+        borderWidth: 1,
+        borderColor: '#000',
+    },
+    dataName: {
+        flex: 3,
+    },
+    dataQuantity: {
+        flex: 1,
+    },
+    dataBrand: {
+        flex: 1,
+    },
+    dataProvider: {
+        flex: 1,
+    },
+    dataUnitPrice: {
+        flex: 2,
+    },
+    dataTotalPrice: {
+        flex: 2,
+    },
+    tableFooterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 10,
+    },
+    tableFooter: {
+        backgroundColor: '#f00',
+        color: '#fff',
+        padding: 8,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        borderWidth: 1,
+        borderColor: '#000',
+    },
+    footerTotalLabel: {
+        flex: 1,
+        marginRight: 10,
+    },
+    footerTotalValue: {
+        flex: 1,
+    },
+});
+
+
+const InformeVenta = ({ data, totalPeriodo, nombre, texto, fechaInicio, fechaCierre }) => {
     console.log(data)
-    const [proveedoresArray, setProveedoresArray] = useState(proveedores);
-    const [marcasArray, setMarcasArray] = useState(marcas);
 
 
-
-    const formatearProveedor = (id) => {
-        const proveedor = proveedoresArray?.find(p => p.id === id);
-        return proveedor?.nombre
+    function calcularPrecioTotal(producto, cantidad) {
+        return formatearDinero(cantidad * producto.precioVenta);
     }
-
-    const formatearMarca = (id) => {
-        const marca = marcasArray?.find(p => p.id === id);
-        return marca?.nombre
-    }
-
-
-    const generatePDF = () => {
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.getWidth();
-
-        const title = `PeluSys - Productos Más Vendidos dia ${fecha}`;
-        doc.setFontSize(16);
-
-        // Centrar el título en la cabecera
-        const titleWidth = doc.getTextWidth(title);
-        const titleX = (pageWidth - titleWidth) / 2;
-        const titleY = 10; // Posición vertical de la cabecera, ajusta según tus necesidades
-
-        // Dibujar el título en la cabecera
-        doc.text(title, titleX, titleY);
-
-
-        let contentY = 30; // Posición vertical del contenido, ajusta según tus necesidades
-
-        // Mostrar el contenido del bucle data.map()
-        data.map((item) => {
-            doc.text(`Nombre: ${item.productos.nombre}`, 10, contentY);
-            doc.text(`Cantidad: ${item.cantidad}`, 10, contentY + 10);
-            doc.text(`Descripción: ${item.productos.detalle}`, 10, contentY + 20);
-            doc.text(`Precio de Compra: ${item.productos.precioCompra}`, 10, contentY + 30);
-            doc.text(`Precio de Venta: ${item.productos.precioVenta}`, 10, contentY + 40);
-            doc.text(`Proveedor del Producto: ${formatearProveedor(item.productos.id_proveedor)}`, 10, contentY + 50);
-            doc.text(`Marca del Producto: ${formatearMarca(item.productos.id_marca)}`, 10, contentY + 60);
-            contentY += 70; // Incrementa la posición vertical para la siguiente entrada
-
-            // Dibuja una línea horizontal debajo del elemento
-            doc.setLineWidth(0.5);
-            doc.line(10, contentY, pageWidth - 10, contentY);
-            contentY += 10; // Incrementa la posición vertical para la línea horizontal
-        });
-
-        doc.save(`${nombre}.pdf`);
-    };
-
-
 
     return (
-        <div className="flex flex-col">
-            <h2 className="text-xl mb-4">{`Desea Imprimir un Informe de las Ventas de la fecha ${fecha} ?`}</h2>
-            <div className="flex justify-end">
-                <Button variant='success' onClick={generatePDF}>Imprimir</Button>
-            </div>
-        </div>
-
+        <Document>
+            <Page size="A4" style={styles.page}>
+                <View style={styles.section}>
+                    <Text style={styles.title}>PelySys - {nombre}</Text>
+                    <Text style={styles.subtitle}>Periodo: {fechaInicio} - {fechaCierre}</Text>
+                </View>
+                <View style={styles.section}>
+                    <View style={styles.table}>
+                        <View style={styles.tableHeaderRow}>
+                            <Text style={[styles.tableHeader, styles.headerName]}>Nombre</Text>
+                            <Text style={[styles.tableHeader, styles.headerQuantity]}>Cantidad</Text>
+                            <Text style={[styles.tableHeader, styles.headerBrand]}>Marca</Text>
+                            <Text style={[styles.tableHeader, styles.headerProvider]}>Proveedor</Text>
+                            <Text style={[styles.tableHeader, styles.headerUnitPrice]}>Precio Unitario</Text>
+                            <Text style={[styles.tableHeader, styles.headerTotalPrice]}>Precio Total Venta</Text>
+                        </View>
+                        {data.map((producto, index) => (
+                            <View key={index} style={styles.tableRow}>
+                                <Text style={[styles.tableData, styles.dataName]}>{producto.productos.nombre}</Text>
+                                <Text style={[styles.tableData, styles.dataQuantity]}>{producto.cantidad}</Text>
+                                <Text style={[styles.tableData, styles.dataBrand]}>{producto.marca}</Text>
+                                <Text style={[styles.tableData, styles.dataProvider]}>{producto.proveedor}</Text>
+                                <Text style={[styles.tableData, styles.dataUnitPrice]}>{formatearDinero(producto.productos.precioVenta)}</Text>
+                                <Text style={[styles.tableData, styles.dataTotalPrice]}>{calcularPrecioTotal(producto.productos, producto.cantidad)}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+                <View style={styles.tableFooterRow}>
+                    <Text style={[styles.tableFooter, styles.footerTotalLabel]}>{texto}</Text>
+                    <Text style={[styles.tableFooter, styles.footerTotalValue]}>{formatearDinero(totalPeriodo)}</Text>
+                </View>
+            </Page>
+        </Document>
 
     );
 };

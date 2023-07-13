@@ -43,5 +43,17 @@ function formatearDecimales(number, decimalLimit) {
   return Math.floor(number * power) / power;
 }
 
+function formatearDinero(monto) {
+  // Formatear el monto con el formato de dinero paraguayo
+  const opcionesFormato = {
+    style: 'currency',
+    currency: 'PYG',
+    minimumFractionDigits: 0
+  };
+  const montoFormateado = monto.toLocaleString('es-PY', opcionesFormato);
+
+  return montoFormateado;
+}
+
 // Exportar la función
-module.exports = { getFechaActual, convertirHora, formatearFecha, formatearDecimales };
+module.exports = { getFechaActual, convertirHora, formatearFecha, formatearDecimales, formatearDinero };

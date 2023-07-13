@@ -99,9 +99,9 @@ class FacturasApi {
         }
     };
 
-    filterFacturasCompraPage = async (filter, page, size) => {
+    filterFacturasCompraPage = async (filter, esCompra, page, size) => {
         try {
-            const api = `${process.env.API_URL}api/factura/pageBuscar?pagado=${filter}&esCompra=COMPRA`;
+            const api = `${process.env.API_URL}api/factura/pageBuscar?pagado=${filter}&esCompra=${esCompra}`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
                 params: { page, size },
