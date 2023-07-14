@@ -168,6 +168,14 @@ const Sidebar = ({ children }) => {
                                             Compras
                                         </button>
                                     </li>
+                                    <li>
+                                        <button
+                                            onClick={() => handleMenuClick("/informeCaja")}
+                                            className="text-gray-600 py-3 hover:text-gray-900"
+                                        >
+                                            Caja
+                                        </button>
+                                    </li>
 
                                 </ul>
                             )}

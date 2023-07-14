@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { useRouter } from 'next/router'
 import { AuthContext } from "@/pages/contexts/AuthContext";
 import { formatearDinero, formatearFecha } from "@/helpers";
-import InformeVenta from "@/components/InformeVenta";
+import GeneradorInforme from "@/components/generadorInforme";
 import { PDFViewer } from "@react-pdf/renderer";
 import InformeApi from "./api/InformeApi";
 import DatePicker from "react-datepicker";
@@ -411,7 +411,7 @@ const InformeVentaProducto = ({ }) => {
                 <Modal.Body>
                     <div style={{ width: '100%', height: '80vh' }}>
                         <PDFViewer width="100%" height="100%">
-                            <InformeVenta
+                            <GeneradorInforme
                                 data={informeProductos}
                                 totalPeriodo={totalPeriodo}
                                 nombre={"Informe de Ventas"}

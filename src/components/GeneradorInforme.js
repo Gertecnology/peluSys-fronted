@@ -105,8 +105,7 @@ const styles = StyleSheet.create({
 });
 
 
-const InformeVenta = ({ data, totalPeriodo, nombre, texto, fechaInicio, fechaCierre }) => {
-    console.log(data)
+const GeneradorInforme = ({ data, totalPeriodo, nombre, texto, fechaInicio, fechaCierre }) => {
 
 
     function calcularPrecioTotal(producto, cantidad) {
@@ -117,7 +116,7 @@ const InformeVenta = ({ data, totalPeriodo, nombre, texto, fechaInicio, fechaCie
         <Document>
             <Page size="A4" style={styles.page}>
                 <View style={styles.section}>
-                    <Text style={styles.title}>PelySys - {nombre}</Text>
+                    <Text style={styles.title}>PeluSys - {nombre}</Text>
                     <Text style={styles.subtitle}>Periodo: {fechaInicio} - {fechaCierre}</Text>
                 </View>
                 <View style={styles.section}>
@@ -152,4 +151,4 @@ const InformeVenta = ({ data, totalPeriodo, nombre, texto, fechaInicio, fechaCie
     );
 };
 
-export default InformeVenta;
+export default GeneradorInforme;

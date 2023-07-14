@@ -11,12 +11,13 @@ import EmpleadoApi from "./api/EmpleadoApi";
 import ProductoApi from "./api/ProductoApi";
 import { AiOutlineDelete } from "react-icons/ai"
 import { AiOutlineUserAdd } from "react-icons/ai";
+import { LuShoppingCart } from 'react-icons/lu';
 import { FiEdit2 } from "react-icons/fi";
 import Mensaje from "@/components/Mensaje";
 import { toast } from "react-toastify";
 import axios from "axios";
 import FacturasApi from "./api/FacturasApi";
-import { formatearFecha } from "@/helpers";
+import { formatearDinero, formatearFecha } from "@/helpers";
 import InformeCaja from "@/components/InformeCaja";
 import InformeApi from "./api/InformeApi";
 
@@ -46,6 +47,9 @@ const Caja = () => {
     const [montoEfectivo, setMontoEfectivo] = useState("");
     const [vueltoMostrar, setVueltoMostrar] = useState("");
     const [empleadoNombre, setEmpleadoNombre] = useState("");
+    const [montoApertura, setMontoApertura] = useState('');
+    const [montoCierre, setMontoCierre] = useState(0);
+    const [montoFormateado, setMontoFormateado] = useState("");
 
 
     const [clientes, setClientes] = useState([]);
@@ -67,7 +71,7 @@ const Caja = () => {
     const [totalPagarFacturas, setTotalPagarFacturas] = useState([]);
     const [vuelto, setVuelto] = useState([]);
     const [listaFacturasFiltradas, setListaFacturasFiltradas] = useState([]);
-    const [montoReal, setMontoFinal] = useState([]);
+    const [montoReal, setMontoReal] = useState([]);
     const [montoTeorico, setMontoTeorico] = useState([]);
     const [transacciones, setTransacciones] = useState([]);
     const [montoTeoricoLs, setMontoTeoricoLs] = useState([]);
@@ -117,8 +121,6 @@ const Caja = () => {
         const formattedDate = `${day}-${month}-${year}`;
 
         setFecha(formattedDate);
-        console.log(cajaEmpleado.cajas_id);
-        obtenerMonto(cajaEmpleado.cajas_id);
         setShowCerrarCajaModal(!showCerrarCajaModal);
     };
 
@@ -127,7 +129,6 @@ const Caja = () => {
         obtenerEmpleados();
         obtenerProductos();
         obtenerFacturas();
-        comprobarCaja();
 
     }, [user]);
 
@@ -169,7 +170,7 @@ const Caja = () => {
     useEffect(() => {
         if (rucCliente.length > 4) {
 
-            filtrarCliente(rucCliente)
+            filtrarPorRuc(rucCliente)
         }
         else {
             setNombreCliente("");
@@ -208,9 +209,7 @@ const Caja = () => {
     }
 
     const handleShowInformeModal = () => {
-        obtenerInformeCaja(cajaEmpleado.cajas_id);
         setShowInformeModal(!showInformeModal);
-        setMontoTeoricoLs([])
     }
 
 
@@ -288,6 +287,7 @@ const Caja = () => {
     }
 
     const obtenerInformeCaja = (id) => {
+        console.log(id)
         const informeApi = new InformeApi(user.token);
         informeApi.getInformeCaja(id)
             .then((datos) => {
@@ -326,19 +326,14 @@ const Caja = () => {
         cajaApi.getMontoCaja(id)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
-                setMontoTeorico(datos);
+                setMontoTeorico(datos.montoTeorico);
                 localStorage.setItem('montoTeorico', datos.montoTeorico);
-
+                const valorLocalStorage = localStorage.getItem('montoTeorico');
+                setMontoTeoricoLs(valorLocalStorage)
             })
             .catch((error) => {
                 // Manejar el error
                 console.error("Error al obtener los montos:", error);
-            })
-            .finally(() => {
-                const valorLocalStorage = localStorage.getItem('montoTeorico');
-                if (valorLocalStorage) {
-                    setMontoTeoricoLs(valorLocalStorage);
-                }
             })
 
 
@@ -351,7 +346,8 @@ const Caja = () => {
     }
 
     const formAbrirCaja = (data) => {
-        if (getValues("monto") < 0) {
+        const montoAperturaNumerico = montoApertura.replace(/[^\d]/g, '');
+        if (montoAperturaNumerico < 0) {
 
             setMensaje("Monto no valido!!");
             return;
@@ -363,7 +359,7 @@ const Caja = () => {
             api,
             {
                 cajaId: Number(data.cajaId),
-                monto: Number(data.monto),
+                monto: parseInt(montoAperturaNumerico),
                 empleadoId: Number(user.empleado_id)
 
             },
@@ -374,12 +370,12 @@ const Caja = () => {
                 setVisible(!visible);
                 handleChangeComponents();
                 handleClose();
-                setCajaEmpleado(data)
+                setCajaEmpleado(data.data)
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
                 setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
                 verCajaEmpleado();
-
-
+                setMontoTeorico(data.data.monto);
+                setMontoApertura("");
 
             })
             .catch((error) => {
@@ -387,7 +383,6 @@ const Caja = () => {
             })
             .finally(() => {
                 reset();
-                setMontoTeoricoLs(data.monto);
             })
     }
 
@@ -410,33 +405,25 @@ const Caja = () => {
                     console.error("Error al obtener las cajas:", error);
                     reject(); // Rechazar la promesa en caso de error
                 })
-                .finally(() => {
-                    obtenerMonto(cajaEmpleado.cajas_id);
-                })
         });
     };
 
-
-    const comprobarCaja = () => {
-        // Verificar si hay datos guardados en el LocalStorage
+    useEffect(() => {
         const storedCajaEmpleado = localStorage.getItem('cajaEmpleado');
         if (storedCajaEmpleado) {
-            // Convertir los datos almacenados en formato JSON nuevamente a un objeto
             const parsedCajaEmpleado = JSON.parse(storedCajaEmpleado);
             setCajaEmpleado(parsedCajaEmpleado);
-            obtenerMonto(cajaEmpleado.cajas_id);
+            obtenerMonto(parsedCajaEmpleado.cajas_id);
             setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
             setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
             setIsAbierto(true);
             setIsCheckboxDisabled(true);
             setVisible(true);
-            setAreComponentsEnabled(true)
-
+            setAreComponentsEnabled(true);
         } else {
             obtenerCajas();
         }
-    }
-
+    }, []);
 
     const formClienteSubmit = (data) => {
         if (!user) return
@@ -485,19 +472,15 @@ const Caja = () => {
     }
 
 
-
-
-
-
     const formatearEmpleado = (id) => {
         const empleado = empleados?.find(empleado => empleado.id === id);
         return empleado?.apellido;
     }
 
 
-    const filtrarCliente = (valor) => {
+    const filtrarPorRuc = (valor) => {
         const datoCliente = clientes.find(cliente => cliente?.ruc === valor);
-        setNombreCliente(datoCliente?.nombre);
+        setClientesSearchValue(datoCliente?.nombre);
     }
 
     const handleInputProductoChange = (event) => {
@@ -689,12 +672,20 @@ const Caja = () => {
     }
 
     const handleCerrarCaja = () => {
-        const diferencia = montoReal - montoTeorico;
+        const montoCierreFormat = montoFormateado.replace(/[^\d]/g, '');
+        if (montoCierreFormat < 0) {
+
+            setMensaje("Monto no valido!!");
+            return;
+        }
+
+        setMensaje("");
+        const diferencia = montoCierreFormat - montoTeorico;
         const json = {
 
             cajaId: cajaEmpleado.cajas_id,
             montoTeorico: montoTeorico.montoTeorico,
-            montoReal: montoReal,
+            montoReal: montoCierreFormat,
             diferencia: diferencia,
             empleadoAutorizanteId: user.empleado_id
         }
@@ -707,26 +698,40 @@ const Caja = () => {
         )
             .then((response) => {
                 handleCerrarCajaModal()
+                handleShowInformeModal();
+                obtenerInformeCaja(cajaEmpleado.cajas_id);
                 setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
                 setAreComponentsEnabled(false);
                 setVisible(false)
                 setCajaEmpleado([])
                 localStorage.removeItem('cajaEmpleado');
-                handleShowInformeModal();
                 setMontoTeoricoLs([])
+                setCarrito([]);
+                setRucCliente("");
+                setClientesSearchValue("");
+                setMontoTeorico([]);
+                obtenerCajas();
+                setMontoFormateado("")
 
             })
             .catch((error) => {
                 console.log(error)
             })
-            .finally(() => {
-                setMontoTeorico([]);
-            })
     }
 
 
+    const handleMontoChange = (event) => {
+        const valor = event.target.value;
+        // Eliminar los separadores de miles y el símbolo de moneda
+        const valorSinFormato = valor.replace(/\D/g, '');
+        // Convertir el valor a un número entero
+        const valorNumerico = parseInt(valorSinFormato, 10);
+        // Formatear el valor numerico utilizando la función formatearDinero
+        const valorFormateado = formatearDinero(valorNumerico);
 
+        setMontoFormateado(valorFormateado);
+    };
 
 
 
@@ -793,6 +798,19 @@ const Caja = () => {
         );
     };
 
+    const handleMontoAperturaChange = (event) => {
+        const valor = event.target.value;
+        // Eliminar los separadores de miles y el símbolo de moneda
+        const valorSinFormato = valor.replace(/\D/g, '');
+        // Convertir el valor a un número entero
+        const valorNumerico = parseInt(valorSinFormato, 10);
+        // Formatear el valor numerico utilizando la función formatearDinero
+        const valorFormateado = formatearDinero(valorNumerico);
+
+        setMontoApertura(valorFormateado);
+    };
+
+
 
     const DetallesTabla = ({ facturas }) => {
         // Ordenar las facturas por ID en orden descendente
@@ -802,61 +820,60 @@ const Caja = () => {
                 <Table striped bordered hover>
                     <thead>
                         <tr>
-                            <th>Nro. Factura</th>
-                            <th>Cliente</th>
-                            <th>RUC</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Total</th>
-                            <th>Seleccionar</th>
+                            <th className="text-center">Nro. Factura</th>
+                            <th className="text-center">Cliente</th>
+                            <th className="text-center">RUC</th>
+                            <th className="text-center">Fecha</th>
+                            <th className="text-center">Estado</th>
+                            <th className="text-center">Total</th>
+                            <th className="text-center">Seleccionar</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {isBuscar ?
-                            (
-                                listaFacturasFiltradas.map((factura, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                        <td >{formatearCliente(factura.cliente_id)}</td>
-                                        <td >{factura.ruc}</td>
-                                        <td >{formatearFecha(factura.fecha)}</td>
-                                        <td>{factura.pagado}</td>
-                                        <td>{factura.precio_total}</td>
-
-                                        <td className="flex justify-center items-center">
-                                            <input
-                                                checked={facturaSeleccionada.includes(factura.id)}
-                                                onChange={() => { handleCheckboxChange(factura.id) }}
-                                                type="checkbox"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                facturasOrdenadas.map((factura, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{factura.numero_factura}</td>
-                                        <td >{formatearCliente(factura.cliente_id)}</td>
-                                        <td >{factura.ruc}</td>
-                                        <td >{formatearFecha(factura.fecha)}</td>
-                                        <td>{factura.pagado}</td>
-                                        <td>{factura.precio_total}</td>
-
-                                        <td className="flex justify-center items-center">
-                                            <input
-                                                checked={facturaSeleccionada.includes(factura.id)}
-                                                onChange={() => { handleCheckboxChange(factura.id) }}
-                                                type="checkbox"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))
-                            )
-
-
-                        }
+                        {isBuscar ? (
+                            listaFacturasFiltradas.map((factura, index) => (
+                                <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
+                                    <td className="text-center align-middle">{factura.numero_factura}</td>
+                                    <td className="text-center align-middle">{formatearCliente(factura.cliente_id)}</td>
+                                    <td className="text-center align-middle">{factura.ruc}</td>
+                                    <td className="text-center align-middle">{formatearFecha(factura.fecha)}</td>
+                                    <td className="text-center align-middle">{factura.pagado}</td>
+                                    <td className="text-center align-middle">{formatearDinero(factura.precio_total)}</td>
+                                    <td className="text-center flex justify-center items-center">
+                                        <input
+                                            checked={facturaSeleccionada.includes(factura.id)}
+                                            onChange={() => {
+                                                handleCheckboxChange(factura.id);
+                                            }}
+                                            type="checkbox"
+                                        />
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            facturasOrdenadas.map((factura, index) => (
+                                <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
+                                    <td className="text-center align-middle">{factura.numero_factura}</td>
+                                    <td className="text-center align-middle">{formatearCliente(factura.cliente_id)}</td>
+                                    <td className="text-center align-middle">{factura.ruc}</td>
+                                    <td className="text-center align-middle">{formatearFecha(factura.fecha)}</td>
+                                    <td className="text-center align-middle">{factura.pagado}</td>
+                                    <td className="text-center align-middle">{formatearDinero(factura.precio_total)}</td>
+                                    <td className="text-center flex justify-center items-center">
+                                        <input
+                                            checked={facturaSeleccionada.includes(factura.id)}
+                                            onChange={() => {
+                                                handleCheckboxChange(factura.id);
+                                            }}
+                                            type="checkbox"
+                                        />
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </Table>
+
             </div>
         );
     };
@@ -885,7 +902,7 @@ const Caja = () => {
                                 <td >{factura.ruc}</td>
                                 <td >{formatearFecha(factura.fecha)}</td>
                                 <td>{factura.pagado}</td>
-                                <td>{factura.precio_total}</td>
+                                <td>{formatearDinero(factura.precio_total)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -998,9 +1015,10 @@ const Caja = () => {
                 setIsSubMenuTarjetaOpen(false);
                 setTransacciones([])
                 imprimirFacturas(facturasId);
+                obtenerMonto(cajaEmpleado.cajas_id)
 
                 // Actualizar el valor de montoTeoricoLs sumando montoTotal
-                setMontoTeoricoLs((prevMonto) => prevMonto + montoTotal);
+                setMontoTeorico((prevMonto) => prevMonto + montoTotal);
             })
             .catch((error) => {
                 toast.error('No se pudo Pagar!"');
@@ -1009,10 +1027,6 @@ const Caja = () => {
                 setMontoEfectivo("")
 
             })
-            .finally(() => {
-                obtenerMonto(cajaEmpleado.cajas_id)
-            })
-
 
     }
 
@@ -1086,7 +1100,7 @@ const Caja = () => {
                     </div>
                     <div className="w-1/4 pr-20">
                         <div>
-                            <p className="text-2xl font-bold">Monto Actual en Caja: {montoTeoricoLs} Gs.</p>
+                            <p className="text-2xl font-bold">Monto Actual en Caja: {formatearDinero(montoTeorico)}</p>
                         </div>
 
                         <div className="flex justify-center gap-3">
@@ -1134,63 +1148,78 @@ const Caja = () => {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col pl-12 mt-5 gap-3 w-6/7">
 
-                    <div className="flex w-1/2 gap-3">
-                        <div className="w-3/4">
-                            <Form.Control
-                                placeholder="Producto"
-                                disabled={!areComponentsEnabled}
-                                value={productosSearchValue}
-                                onChange={handleInputProductoChange}
-                            />
+                <div className="flex flex-col pl-12 mt-1 gap-3 w-6/7">
+                    <div className="flex w-1/2 gap-3 items-center">
+                        <div className="w-5/12">
+                            <Form.Group className="flex flex-col">
+                                <Form.Label>Producto:</Form.Label>
+                                <Form.Control
+                                    placeholder="Producto"
+                                    disabled={!areComponentsEnabled}
+                                    value={productosSearchValue}
+                                    onChange={handleInputProductoChange}
+                                />
+                            </Form.Group>
                         </div>
-                        <div className="w-2/4">
-                            <Form.Control
-                                type="number"
+                        <div className="w-4/12">
+                            <Form.Group className="flex flex-col">
 
-                                placeholder="Cantidad"
+                                <Form.Label>Cantidad:</Form.Label>
+                                <Form.Control
+                                    type="number"
+
+                                    placeholder="Cantidad"
+                                    disabled={!areComponentsEnabled}
+                                    value={cantidad}
+                                    onChange={(e) => setCantidad(e.target.value)}
+                                />
+                            </Form.Group>
+                        </div>
+                        <div className="w-3/12 pt-8">
+                            <button
+                                className="flex items-center justify-center bg-transparent w-12 h-12 focus:outline-none"
+                                onClick={() => agregarAlCarrito()}
                                 disabled={!areComponentsEnabled}
-                                value={cantidad}
-                                onChange={(e) => setCantidad(e.target.value)}
-                            />
+                            >
+                                <LuShoppingCart className="text-black hover:text-green-800" size={30} />
+
+                            </button>
                         </div>
-                        <div className="w-1/4">
-                            <Button variant="success" onClick={() => agregarAlCarrito()} disabled={!areComponentsEnabled}>
-                                +
-                            </Button>
-                        </div>
+
                     </div>
-                    <div className="fixed my-11 shadow z-50 bg-white w-80">
+                    {/*Menu de opciones*/}
+                    <div className="fixed my-20 shadow z-50 bg-white w-80">
                         {productosSearchValue && productosFiltrados.length > 0 && (
                             <ul>
                                 {productosFiltrados.map((producto) => (
-                                    <li className="border-y-1 border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickRow(producto.id)} key={producto.id}>{producto.nombre}</li>
+                                    <li className="border-black py-2 hover:cursor-pointer hover:font-bold" onClick={() => handleClickRow(producto.id)} key={producto.id}>{producto.nombre}</li>
                                 ))}
                             </ul>
                         )}
 
                     </div>
                 </div>
+
                 <div className="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
                     <div className="w-full overflow-x-auto">
                         <table className="w-full border-collapse bg-white text-left text-sm text-gray-500">
                             <thead className="sticky top-0 bg-blue-800">
                                 <tr>
                                     <th scope="col" className="px-6 py-4 font-medium text-white">Producto</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">Cantidad</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">Precio unitario</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white">Subtotal</th>
-                                    <th scope="col" className="px-6 py-4 font-medium text-white w-1/12">Acciones</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white text-center">Cantidad</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white text-center">Precio unitario</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white text-center">Subtotal</th>
+                                    <th scope="col" className="px-6 py-4 font-medium text-white text-center w-1/12">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 overflow-y-auto">
-                                {(carrito?.map((producto, index) => (
+                                {carrito?.map((producto, index) => (
                                     <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900">{producto.nombre}</td>
-                                        <td >{producto.cantidad}</td>
-                                        <td >{producto.precioUnitario}</td>
-                                        <td>{producto.subtotal}</td>
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900 text-center">{producto.nombre}</td>
+                                        <td className="text-center">{producto.cantidad}</td>
+                                        <td className="text-center">{formatearDinero(producto.precioUnitario)}</td>
+                                        <td className="text-center">{formatearDinero(producto.subtotal)}</td>
                                         <td className="flex justify-center items-center">
                                             <Button size="sm" variant="link" onClick={() => handleEditProductoCarrito(producto.id)}>
                                                 <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
@@ -1202,13 +1231,14 @@ const Caja = () => {
                                             </Button>
                                         </td>
                                     </tr>
-                                )))}
+                                ))}
                             </tbody>
                         </table>
+
                     </div>
                 </div>
                 <div className="fixed bottom-12 right-48 flex justify-end">
-                    <label className="text-black text-2xl font-mono">Total a pagar: {totalPagar}</label>
+                    <label className="text-black text-2xl font-mono">Total a pagar: {formatearDinero(totalPagar)}</label>
                 </div>
             </div>
             {/*Modal para abrir caja*/}
@@ -1254,12 +1284,10 @@ const Caja = () => {
                         <Form.Group>
                             <Form.Label className="font-bold">Monto de Apertura de Caja</Form.Label>
                             <Form.Control
-                                {...register("monto", {
-                                    required: true
-                                })}
-                                type="number"
+                                type="text"
                                 placeholder="Monto de Apertura"
-                                isInvalid={errors.monto}
+                                value={montoApertura}
+                                onChange={handleMontoAperturaChange}
                             />
                         </Form.Group>
                     </Modal.Body>
@@ -1482,7 +1510,7 @@ const Caja = () => {
                         <div className="mt-5 bottom-44 right-56 flex justify-end">
                             <label className="text-black text-2xl font-mono">{
                                 isTotalPagarShow && (
-                                    <p>Total venta: {totalPagarFacturas} Gs.</p>
+                                    <p>Total venta: {formatearDinero(totalPagarFacturas)}</p>
                                 )
                             }</label>
                         </div>
@@ -1523,20 +1551,19 @@ const Caja = () => {
                         </div>
                     </div>
 
-                    <Form.Label className="font-bold">Monto Teorico: {montoTeorico.montoTeorico} Gs.</Form.Label>
+                    <Form.Label className="font-bold">Monto Teorico: {formatearDinero(montoTeorico)}</Form.Label>
                     <Form.Group>
                         <Form.Label className="font-bold">Monto de Cierre de Caja</Form.Label>
                         <Form.Control
-                            type="number"
+                            type="text"
                             placeholder="Monto de Cierre"
-                            value={montoReal}
-                            onChange={(e) => setMontoFinal(e.target.value)}
-
+                            value={montoFormateado}
+                            onChange={handleMontoChange}
                         />
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="primary" type="submit" onClick={() => { handleCerrarCajaModal(), setMontoFinal([]) }}>
+                    <Button variant="primary" type="submit" onClick={() => { handleCerrarCajaModal(), setMontoReal([]) }}>
                         Salir
                     </Button>
                     <Button variant="success" type="submit" onClick={handleCerrarCaja}>
@@ -1562,7 +1589,7 @@ const Caja = () => {
 
 
 
-        </Layout>
+        </Layout >
     );
 };
 
