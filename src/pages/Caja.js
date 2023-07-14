@@ -352,6 +352,10 @@ const Caja = () => {
             setMensaje("Monto no valido!!");
             return;
         }
+        if (montoAperturaNumerico.trim() === '') {
+            setMensaje("El monto de apertura es requerido.");
+            return;
+        }
         setMensaje("");
         const api = `${process.env.API_URL}api/cajas/aperturas`;
 
@@ -678,6 +682,10 @@ const Caja = () => {
             setMensaje("Monto no valido!!");
             return;
         }
+        if (montoCierreFormat.trim() === '') {
+            setMensaje("El monto de cierre es requerido.");
+            return;
+        }
 
         setMensaje("");
         const diferencia = montoCierreFormat - montoTeorico;
@@ -723,16 +731,24 @@ const Caja = () => {
 
     const handleMontoChange = (event) => {
         const valor = event.target.value;
+        if (valor === "") {
+            setMontoFormateado(""); // Establecer un valor predeterminado cuando el input está vacío
+            return;
+        }
+
         // Eliminar los separadores de miles y el símbolo de moneda
         const valorSinFormato = valor.replace(/\D/g, '');
         // Convertir el valor a un número entero
         const valorNumerico = parseInt(valorSinFormato, 10);
-        // Formatear el valor numerico utilizando la función formatearDinero
-        const valorFormateado = formatearDinero(valorNumerico);
 
-        setMontoFormateado(valorFormateado);
+        if (isNaN(valorNumerico)) {
+            setMontoFormateado(""); // Establecer un valor predeterminado si el valor no es numérico
+        } else {
+            // Formatear el valor numerico utilizando la función formatearDinero
+            const valorFormateado = formatearDinero(valorNumerico);
+            setMontoFormateado(valorFormateado);
+        }
     };
-
 
 
 
@@ -800,15 +816,26 @@ const Caja = () => {
 
     const handleMontoAperturaChange = (event) => {
         const valor = event.target.value;
+
+        if (valor === "") {
+            setMontoApertura(""); // Establecer un valor predeterminado cuando el input está vacío
+            return;
+        }
+
         // Eliminar los separadores de miles y el símbolo de moneda
         const valorSinFormato = valor.replace(/\D/g, '');
         // Convertir el valor a un número entero
         const valorNumerico = parseInt(valorSinFormato, 10);
-        // Formatear el valor numerico utilizando la función formatearDinero
-        const valorFormateado = formatearDinero(valorNumerico);
 
-        setMontoApertura(valorFormateado);
+        if (isNaN(valorNumerico)) {
+            setMontoApertura(""); // Establecer un valor predeterminado si el valor no es numérico
+        } else {
+            // Formatear el valor numerico utilizando la función formatearDinero
+            const valorFormateado = formatearDinero(valorNumerico);
+            setMontoApertura(valorFormateado);
+        }
     };
+
 
 
 
@@ -1534,6 +1561,7 @@ const Caja = () => {
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    {mensaje && <Mensaje tipo="error">{mensaje}</Mensaje>}
                     <div className="flex justify-between">
                         <div className="flex-col">
                             <p>
