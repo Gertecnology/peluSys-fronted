@@ -129,7 +129,6 @@ const CompraProductos = ({ }) => {
         const formattedDate = `${day}-${month}-${year}`;
 
         setFecha(formattedDate);
-        console.log(fecha)
         // Función para obtener el inicio y el final del día en formato "YYYY-MM-DDTHH:mm:ss"
         const getStartOfDay = (date) => {
             const startDateTime = new Date(date); // Crea una nueva instancia de la fecha
@@ -170,15 +169,21 @@ const CompraProductos = ({ }) => {
     const obtenerFacturas = () => {
         if (user && user.token) {
             const facturaApi = new FacturasApi(user.token);
+            const compararFechasDescendente = (a, b) => new Date(b.fecha) - new Date(a.fecha);
 
-            facturaApi.getFacturas()
+            facturaApi.getFacturas(0,100)
                 .then((datos) => {
+                    console.log(datos)
                     // Realizar algo con los datos obtenidos
                     const facturasFiltradas = datos.content.filter((factura) => factura.esCompra === "COMPRA");
+
+                    // Ordenar el arreglo de objetos de manera descendente según las fechas
+                    const arregloOrdenadoDescendente = facturasFiltradas.sort(compararFechasDescendente);
+
                     setFacturas(facturasFiltradas);
-                    const totalPagesFacturas = facturasFiltradas.map((factura) => factura.totalPages);
-                    setTotalPages(totalPagesFacturas);
+                    setTotalPages(datos.totalPages);
                     console.log(facturasFiltradas);
+                    console.log(arregloOrdenadoDescendente);
 
 
                 })
@@ -243,7 +248,7 @@ const CompraProductos = ({ }) => {
 
         const informeApi = new InformeApi(user.token);
 
-        informeApi.getInformeProducto("COMPRA",fechaInicio, fechaCierre)
+        informeApi.getInformeProducto("COMPRA", fechaInicio, fechaCierre)
             .then((datos) => {
                 // Realizar algo con los datos obtenidos
                 setInformeProductos(datos);
@@ -360,12 +365,11 @@ const CompraProductos = ({ }) => {
         const api = `${process.env.API_URL}api/proveedores/guardarCompra/`;
         const json = {
             proveedorId: proveedorDatos.id,
-
             numeroFactura: data.factura,
             pagado: data.estado,
             detalles: productosAgregar
         }
-
+        console.log(json)
         axios.post(
             api,
             json,

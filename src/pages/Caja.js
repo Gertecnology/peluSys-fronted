@@ -18,7 +18,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import FacturasApi from "./api/FacturasApi";
 import { formatearDinero, formatearFecha } from "@/helpers";
-import InformeCaja from "@/components/InformeCaja";
+import InformeCaja from "@/components/GeneradorInformeCaja";
 import InformeApi from "./api/InformeApi";
 
 
@@ -39,15 +39,15 @@ const Caja = () => {
     const [mensaje, setMensaje] = useState("");
     const [productosSearchValue, setProductosSearchValue] = useState("");
     const [clientesSearchValue, setClientesSearchValue] = useState("");
-    const [totalPagar, setTotalPagar] = useState("");
+    const [totalPagar, setTotalPagar] = useState(0);
     const [cantidad, setCantidad] = useState('');
     const [filtroFacturas, setFiltroFacturas] = useState("");
-    const [montoTarjeta, setMontoTarjeta] = useState("");
-    const [montoTotal, setMontoTotal] = useState("");
-    const [montoEfectivo, setMontoEfectivo] = useState("");
-    const [vueltoMostrar, setVueltoMostrar] = useState("");
+    const [montoTarjeta, setMontoTarjeta] = useState(0);
+    const [montoTotal, setMontoTotal] = useState(0);
+    const [montoEfectivo, setMontoEfectivo] = useState(0);
+    const [vueltoMostrar, setVueltoMostrar] = useState(0);
     const [empleadoNombre, setEmpleadoNombre] = useState("");
-    const [montoApertura, setMontoApertura] = useState('');
+    const [montoApertura, setMontoApertura] = useState(0);
     const [montoCierre, setMontoCierre] = useState(0);
     const [montoFormateado, setMontoFormateado] = useState("");
 
@@ -325,6 +325,7 @@ const Caja = () => {
 
         cajaApi.getMontoCaja(id)
             .then((datos) => {
+                console.log(datos)
                 // Realizar algo con los datos obtenidos
                 setMontoTeorico(datos.montoTeorico);
                 localStorage.setItem('montoTeorico', datos.montoTeorico);
@@ -523,6 +524,8 @@ const Caja = () => {
 
     }
 
+    
+    // Para agregar al carrito
     const agregarAlCarrito = () => {
         const productoAgregar = productos.find(p => p.nombre.toLowerCase().includes(productosSearchValue.toLowerCase()));
 
@@ -592,17 +595,20 @@ const Caja = () => {
     };
 
 
+    // le paso el id del producto que quiero editar
     const handleEditProductoCarrito = (id) => {
-        const productoActualizado = carrito.find((c) => c.id === id);
         setIsEditar(true);
+        const productoActualizado = carrito.find((c) => c.id === id);
         setProductosSearchValue(productoActualizado?.nombre);
         setCantidad(productoActualizado.cantidad);
     };
+
 
     const handleDeleteProductoCarrito = (id) => {
         const carritoActualizado = carrito.filter(c => c.id !== id);
         setCarrito(carritoActualizado);
     }
+
 
     const guardarFacturacion = () => {
         if (carrito.length > 0 && datosCliente.nombre !== "") {
@@ -706,7 +712,6 @@ const Caja = () => {
         )
             .then((response) => {
                 handleCerrarCajaModal()
-                handleShowInformeModal();
                 obtenerInformeCaja(cajaEmpleado.cajas_id);
                 setBtnCerrarCajaVisible(!btnCerrarCajaVisible);
                 setBtnAbrirCajaVisible(!btnAbrirCajaVisible);
@@ -754,8 +759,11 @@ const Caja = () => {
 
 
     const comprobarFacturasCliente = (id) => {
+
         if (carrito.length > 0 && clientesSearchValue.length > 0) {
             const facturasCliente = facturas.find(factura => factura.cliente_id === id);
+
+            // esto pasa si existe una factura a un cliente
             if (facturasCliente !== undefined) {
                 // Obtener los datos anteriores de la factura
                 const facturaAnterior = facturasCliente;
@@ -954,12 +962,19 @@ const Caja = () => {
     };
 
 
+
     const realizarTransaccion = () => {
+        let montoTotalActualizado = 0;
+
+        // Si se desea pagar por Tarjeta y Efectivo
         if (isSubMenuEfectivoOpen && isSubMenuTarjetaOpen) {
-            const montoRestante = totalPagarFacturas - montoEfectivo;
+            const montoRestante = parseInt(totalPagarFacturas) - parseInt(montoEfectivo);
+            console.log(montoRestante);
             setMontoTarjeta(montoRestante);
-            const montoTotal = montoEfectivo + montoTarjeta;
-            setMontoTotal(montoTotal);
+            console.log('monto restante', montoTarjeta);
+            montoTotalActualizado = parseInt(montoEfectivo) + parseInt(montoRestante);
+            setMontoTotal(montoTotalActualizado);
+            console.log(montoTotalActualizado)
 
             const transaccionEfectivo = {
                 monto: Number(montoEfectivo),
@@ -968,19 +983,20 @@ const Caja = () => {
                 formaPago: "EFECTIVO",
             };
             const transaccionTarjeta = {
-                monto: Number(montoTarjeta),
+                monto: Number(montoRestante),
                 descripcion: "Pago en tarjeta",
                 esCompra: "VENTA",
                 formaPago: "TARJETA",
             };
 
-            setTransacciones([...transacciones, transaccionEfectivo]);
-            setTransacciones([...transacciones, transaccionTarjeta]);
-
-        } else if (isSubMenuEfectivoOpen) {
+            setTransacciones([...transacciones, transaccionEfectivo, transaccionTarjeta]);
+        }
+        // si se paga en efectivo
+        else if (isSubMenuEfectivoOpen) {
             if (montoEfectivo >= totalPagarFacturas && montoEfectivo > 0) {
-                const vuelto = -(montoEfectivo - totalPagarFacturas);
-                setMontoTotal(totalPagarFacturas);
+                const vuelto = parseInt(montoEfectivo) - parseInt(totalPagarFacturas);
+                montoTotalActualizado = totalPagarFacturas;
+                setMontoTotal(montoTotalActualizado);
                 setVuelto(vuelto);
 
                 const transaccionEfectivo = {
@@ -991,29 +1007,31 @@ const Caja = () => {
                 };
 
                 setTransacciones([...transacciones, transaccionEfectivo]);
-
-
             } else {
                 setIsMostrarVuelto(false);
                 alert("Monto insuficiente");
                 return;
             }
-        } else if (isSubMenuTarjetaOpen) {
+
+        }
+
+        // Si quiere pagar por Tarjeta
+        else if (isSubMenuTarjetaOpen) {
             setMontoTarjeta(totalPagarFacturas);
-            setMontoTotal(totalPagarFacturas);
+            montoTotalActualizado = totalPagarFacturas;
+            setMontoTotal(montoTotalActualizado);
 
             const transaccionTarjeta = {
-                monto: Number(montoTarjeta),
+                monto: montoTotalActualizado,
                 descripcion: "Pago en tarjeta",
                 esCompra: "VENTA",
                 formaPago: "TARJETA",
             };
 
-
             setTransacciones([...transacciones, transaccionTarjeta]);
-
         }
-        formTransaccion()
+        setMontoTotal(montoTotalActualizado)
+        formTransaccion();
     };
 
     const formTransaccion = () => {
@@ -1023,7 +1041,7 @@ const Caja = () => {
         const json = {
             cajaId: cajaEmpleado.cajas_id,
             precioTotalFactura: totalPagarFacturas,
-            pagoTotal: montoTotal,
+            pagoTotal: totalPagarFacturas,
             facturasIds: facturasId,
             movimientoDetalles: transacciones,
         }
@@ -1043,6 +1061,7 @@ const Caja = () => {
                 setTransacciones([])
                 imprimirFacturas(facturasId);
                 obtenerMonto(cajaEmpleado.cajas_id)
+                setGuardarProductosFactura([])
 
                 // Actualizar el valor de montoTeoricoLs sumando montoTotal
                 setMontoTeorico((prevMonto) => prevMonto + montoTotal);
@@ -1241,18 +1260,18 @@ const Caja = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 overflow-y-auto">
-                                {carrito?.map((producto, index) => (
+                                {carrito?.map((productoCarrito, index) => (
                                     <tr key={index} className="hover:bg-gray-50 hover:cursor-pointer">
-                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900 text-center">{producto.nombre}</td>
-                                        <td className="text-center">{producto.cantidad}</td>
-                                        <td className="text-center">{formatearDinero(producto.precioUnitario)}</td>
-                                        <td className="text-center">{formatearDinero(producto.subtotal)}</td>
+                                        <td className="flex gap-3 px-6 py-4 font-normal text-gray-900 text-center">{productoCarrito.nombre}</td>
+                                        <td className="text-center">{productoCarrito.cantidad}</td>
+                                        <td className="text-center">{formatearDinero(productoCarrito.precioUnitario)}</td>
+                                        <td className="text-center">{formatearDinero(productoCarrito.subtotal)}</td>
                                         <td className="flex justify-center items-center">
-                                            <Button size="sm" variant="link" onClick={() => handleEditProductoCarrito(producto.id)}>
+                                            <Button size="sm" variant="link" onClick={() => handleEditProductoCarrito(productoCarrito.id)}>
                                                 <FiEdit2 color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "blue"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>
-                                            <Button size="sm" variant="link" onClick={() => handleDeleteProductoCarrito(producto.id)}>
+                                            <Button size="sm" variant="link" onClick={() => handleDeleteProductoCarrito(productoCarrito.id)}>
                                                 <AiOutlineDelete color="#808080" size="25px" onMouseOver={({ target }) => target.style.color = "red"}
                                                     onMouseOut={({ target }) => target.style.color = "#808080"} />
                                             </Button>

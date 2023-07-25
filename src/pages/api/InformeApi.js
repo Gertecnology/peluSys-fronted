@@ -44,17 +44,16 @@ class InformeApi {
         }
     };
 
-    getInformeCaja = async (id) => {
+    getInformeCaja = async (fechaInicio, fechaCierre) => {
         try {
-            //api/informes/topProductosFechas?eCompra=COMPRA&fechaInicio=2023-07-03T09%3A00%3A42.411&fechaCierre=2023-07-03T19%3A00%3A42.411
-            const api = `${process.env.API_URL}api/cajas/ResumenUltimoArqueo/${id}`;
+            const api = `${process.env.API_URL}api/cajas/resumenCajas?inicio=${fechaInicio}&fin=${fechaCierre}`;
             const response = await axios(api, {
             });
 
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error("Error al obtener los arqueos en la fecha");
+                throw new Error("Error al obtener las cajas en la fecha");
             }
         } catch (error) {
             console.error("Error en la solicitud HTTP:", error);

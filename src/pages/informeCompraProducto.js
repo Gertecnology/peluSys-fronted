@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { useRouter } from 'next/router'
 import { AuthContext } from "@/pages/contexts/AuthContext";
 import { formatearDinero, formatearFecha } from "@/helpers";
-import GeneradorInforme from "@/components/generadorInforme";
+import GeneradorInforme from "@/components/GeneradorInforme";
 import { PDFViewer } from "@react-pdf/renderer";
 import InformeApi from "./api/InformeApi";
 import DatePicker from "react-datepicker";
@@ -97,9 +97,12 @@ const InformeCompraProducto = ({ }) => {
         const startOfDay = obtenerFechaFormateada(fechaInicio);
         const endOfDay = obtenerFechaFormateada(fechaCierre);
 
+        console.log(startOfDay)
+        console.log(endOfDay)
         if (user && user.token) {
             const productoApi = new InformeApi(user.token);
 
+            
             productoApi
                 .getProductos("COMPRA", startOfDay, endOfDay)
                 .then((datos) => {

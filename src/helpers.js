@@ -50,7 +50,7 @@ function formatearDinero(monto) {
     currency: 'PYG',
     minimumFractionDigits: 0
   };
-  const montoFormateado = monto.toLocaleString('es-PY', opcionesFormato);
+  const montoFormateado = monto?.toLocaleString('es-PY', opcionesFormato);
 
   return montoFormateado;
 }
