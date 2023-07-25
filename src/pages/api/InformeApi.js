@@ -10,7 +10,8 @@ class InformeApi {
 
     getProductos = async (eCompra, inicio, cierre, page, size) => {
         try {
-            const api = `${process.env.API_URL}api/informes/topProductos?eCompra=${eCompra}&inicio=${inicio}&fin=${cierre}`;
+            //http://localhost:8081/api/informes/topProductosFechas?eCompra=COMPRA&fechaInicio=2000-01-01T00%3A00%3A00&fechaCierre=2030-01-01T23%3A23%3A00&page=0&size=100
+            const api = `${process.env.API_URL}api/informes/topProductosFechas?eCompra=${eCompra}&fechaInicio=${inicio}&fechaCierre=${cierre}&page=${page}&size=${size}`;
             const response = await axios.get(api, {
                 headers: { Authorization: `Bearer ${this.token}` },
                 params: { page, size },

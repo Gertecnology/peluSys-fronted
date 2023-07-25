@@ -548,7 +548,7 @@ const InformeCompraProducto = ({ }) => {
 
 
     return (
-        <Layout pagina={"Ventas"} titulo={"Ventas de Productos"} ruta={ruta.pathname}>
+        <Layout pagina={"Informe Caja"} titulo={"Informe de Caja"} ruta={ruta.pathname}>
 
             <div className="block">
                 {/*Este engloba todo*/}

@@ -69,7 +69,7 @@ const InformeCompraProducto = ({ }) => {
 
 
     const calcularTotalPeriodo = (productos) => {
-        const total = productos.reduce((acumulador, producto) => {
+        const total = productos?.reduce((acumulador, producto) => {
             const precioVenta = producto.productos.precioVenta;
             const cantidad = producto.cantidad;
             return acumulador + (precioVenta * cantidad);
@@ -85,29 +85,48 @@ const InformeCompraProducto = ({ }) => {
     }, [productos]);
 
     const obtenerFechaFormateada = (fecha) => {
-        const year = fecha.getFullYear();
-        const month = String(fecha.getMonth() + 1).padStart(2, '0');
-        const day = String(fecha.getDate()).padStart(2, '0');
+        // Fecha de inicio (12:00 AM)
+        const fechaFormateada = new Date(fecha);
 
-        return `${year}/${month}/${day}`;
+        const year = fechaFormateada.getFullYear();
+        const month = String(fechaFormateada.getMonth() + 1).padStart(2, '0');
+        const day = String(fechaFormateada.getDate()).padStart(2, '0');
+        const hours = String(fechaFormateada.getHours()).padStart(2, '0');
+        const minutes = String(fechaFormateada.getMinutes()).padStart(2, '0');
+        const seconds = String(fechaFormateada.getSeconds()).padStart(2, '0');
+
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
     };
 
+
+    const obtenerFechaInicio = (fecha) => {
+        const fechaInicio = new Date(fecha);
+        fechaInicio.setHours(0, 0, 0, 0);
+        return fechaInicio;
+    };
+
+    const obtenerFechaCierre = (fecha) => {
+        const fechaCierre = new Date(fecha);
+        fechaCierre.setHours(23, 59, 59, 999);
+        return fechaCierre;
+    };
     const obtenerProductos = () => {
+        const fechaInicioT = obtenerFechaInicio(fechaInicio); // Obtener la hora de inicio
+        const fechaCierreT = obtenerFechaCierre(fechaCierre); // Obtener la hora de cierre
 
-        const startOfDay = obtenerFechaFormateada(fechaInicio);
-        const endOfDay = obtenerFechaFormateada(fechaCierre);
+        const inicioFormateado = obtenerFechaFormateada(fechaInicioT);
+        const cierreFormateado = obtenerFechaFormateada(fechaCierreT);
 
-        console.log(startOfDay)
-        console.log(endOfDay)
         if (user && user.token) {
             const productoApi = new InformeApi(user.token);
 
-            
+
             productoApi
-                .getProductos("COMPRA", startOfDay, endOfDay)
+                .getProductos("COMPRA", inicioFormateado, cierreFormateado, 0, 100)
                 .then((datos) => {
                     // Realizar algo con los datos obtenidos
                     setProductos(datos.content);
+                    console.log(datos.content)
                     setTotalPages(datos.totalPages);
                     const totalPeriodo = calcularTotalPeriodo(productos);
                     setTotalPeriodo(totalPeriodo);
@@ -123,17 +142,23 @@ const InformeCompraProducto = ({ }) => {
 
 
     const handleFiltrar = (fechaInicio, fechaCierre, marcaInput, nombreInput, proveedorInput) => {
-        const startOfDay = obtenerFechaFormateada(fechaInicio);
-        const endOfDay = obtenerFechaFormateada(fechaCierre);
+        const fechaInicioT = obtenerFechaInicio(fechaInicio); // Obtener la hora de inicio
+        const fechaCierreT = obtenerFechaCierre(fechaCierre); // Obtener la hora de cierre
+
+        const inicioFormateado = obtenerFechaFormateada(fechaInicioT);
+        const cierreFormateado = obtenerFechaFormateada(fechaCierreT);
+
 
         setCargando(true);
         setIsBuscar(true);
         const informeApi = new InformeApi(user.token);
         informeApi
-            .getInformeProducto("COMPRA", startOfDay, endOfDay)
+            .getProductos("COMPRA", inicioFormateado, cierreFormateado, 0, 100)
             .then((datos) => {
+                console.log(datos)
                 // Filtrar por estado y rango de fechas
                 let productosFiltrados = datos.content;
+
 
                 if (marcaInput || nombreInput || proveedorInput) {
                     productosFiltrados = productosFiltrados.filter((producto) => {
@@ -183,7 +208,7 @@ const InformeCompraProducto = ({ }) => {
         return formatearDinero(cantidad * producto.precioVenta);
     }
     return (
-        <Layout pagina={"Ventas"} titulo={"Ventas de Productos"} ruta={ruta.pathname}>
+        <Layout pagina={"Informe Compra"} titulo={"Compras de Productos"} ruta={ruta.pathname}>
 
             <div className="block">
                 {/*Este engloba todo*/}
